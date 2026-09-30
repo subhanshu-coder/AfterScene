@@ -1,0 +1,10 @@
+{
+  "name": "Afterscene",
+  "short_name": "Afterscene",
+  "description": "Your movie people. Your movie identity.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#10110f",
+  "theme_color": "#10110f",
+  "icons": [{ "src": "/app-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.25.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @afterscene/frontend lint
+      - run: pnpm --filter @afterscene/backend lint
+      - run: pnpm --filter @afterscene/frontend typecheck
+      - run: pnpm --filter @afterscene/backend typecheck
+      - run: pnpm --filter @afterscene/backend test
+      - run: pnpm --filter @afterscene/frontend build
+      - run: pnpm --filter @afterscene/backend build

@@ -1,0 +1,17 @@
+{
+  "name": "afterscene",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.25.0",
+  "workspaces": ["frontend", "backend"],
+  "scripts": {
+    "dev": "concurrently -k -n api,web -c cyan,magenta \"npm:dev:api\" \"npm:dev:web\"",
+    "dev:api": "npm --workspace backend run dev",
+    "dev:web": "npm --workspace frontend run dev",
+    "build": "npm --workspace backend run build && npm --workspace frontend run build",
+    "typecheck": "npm --workspace backend run typecheck && npm --workspace frontend run typecheck",
+    "lint": "npm --workspace frontend run lint && npm --workspace backend run lint",
+    "test": "npm --workspace backend run test"
+  },
+  "devDependencies": { "concurrently": "^9.1.2", "eslint": "^9.19.0", "typescript": "^5.7.3", "typescript-eslint": "^8.24.0" }
+}
