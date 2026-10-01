@@ -14,3 +14,14 @@ async function getMovies(path: string, signal?: AbortSignal): Promise<MovieRespo
 
 export const discoverMovies = (signal?: AbortSignal) => getMovies('trending', signal);
 export const searchMovies = (query: string, signal?: AbortSignal) => getMovies(`search?q=${encodeURIComponent(query)}`, signal);
+
+export type ScheduleBucket = 'released' | 'today' | 'upcoming' | 'announced';
+
+export const getMovieSchedule = async (bucket: ScheduleBucket, year: number, signal?: AbortSignal): Promise<MovieResponse> => {
+  const response = await fetch(`${apiBase}/api/movies/schedule?bucket=${bucket}&year=${year}`, { signal });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null) as { error?: { message?: string } } | null;
+    throw new Error(body?.error?.message ?? 'The release schedule could not be loaded.');
+  }
+  return response.json() as Promise<MovieResponse>;
+};
