@@ -2,9 +2,9 @@ import { useState, type FormEvent } from 'react';
 import { Clapperboard, Eye, EyeOff, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
-type AuthDialogProps = { mode: 'signin' | 'signup'; onClose: () => void; onSuccess: (name: string) => void; onModeChange: (mode: 'signin' | 'signup') => void };
+type AuthDialogProps = { mode: 'signin' | 'signup'; onClose: () => void; onSuccess: (name: string) => void; onModeChange: (mode: 'signin' | 'signup') => void; required?: boolean };
 
-export default function AuthDialog({ mode, onClose, onSuccess, onModeChange }: AuthDialogProps) {
+export default function AuthDialog({ mode, onClose, onSuccess, onModeChange, required = false }: AuthDialogProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
@@ -54,13 +54,14 @@ export default function AuthDialog({ mode, onClose, onSuccess, onModeChange }: A
     else setNotice('If an account exists for that email, a password reset link is on its way.');
   }
 
-  return <div className="auth-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-    <section className="auth-dialog" role="dialog" aria-modal="true" aria-labelledby="auth-title">
-      <button className="auth-close" onClick={onClose} aria-label="Close dialog"><X size={18}/></button>
+  return <div className={`auth-backdrop ${required ? 'auth-gate' : ''}`} role={required ? undefined : 'presentation'} onMouseDown={(event) => { if (!required && event.target === event.currentTarget) onClose(); }}>
+    {required && <aside className="auth-gate-visual" aria-label="Afterscene"><div className="auth-gate-wordmark"><span className="brand-mark"><Clapperboard size={18}/></span>afterscene<span className="brand-dot">.</span></div><div className="auth-film-art" aria-hidden="true"><span className="film-orbit film-orbit-one"/><span className="film-orbit film-orbit-two"/><span className="film-glow"/><span className="film-caption">AFTER THE CREDITS</span><span className="film-title">Your films.<br/>Your people.</span></div><span className="auth-gate-footer">A quieter corner for people who love movies.</span></aside>}
+    <section className={`auth-dialog ${required ? 'auth-dialog-gate' : ''}`} role="dialog" aria-modal="true" aria-labelledby="auth-title">
+      {!required && <button className="auth-close" onClick={onClose} aria-label="Close dialog"><X size={18}/></button>}
       <div className="auth-brand"><span className="brand-mark"><Clapperboard size={18}/></span><span>afterscene<span className="brand-dot">.</span></span></div>
-      <span className="auth-eyebrow">YOUR MOVIE PEOPLE ARE HERE</span>
-      <h2 id="auth-title">{mode === 'signup' ? 'Make yourself at home.' : 'Welcome back.'}</h2>
-      <p className="auth-subtitle">{mode === 'signup' ? 'Start building a movie life that feels like yours.' : 'Pick up where your last great story left off.'}</p>
+      <span className="auth-eyebrow">{mode === 'signup' ? 'JOIN AFTERSCENE' : 'YOUR MOVIE SPACE'}</span>
+      <h2 id="auth-title">{mode === 'signup' ? 'Create your account' : 'Welcome back'}</h2>
+      <p className="auth-subtitle">{mode === 'signup' ? 'Save films, share your take, find your people.' : 'Sign in to continue.'}</p>
       <form onSubmit={submit} className="auth-form">
         {mode === 'signup' && <>
           <label>Username<input value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" minLength={3} maxLength={24} required placeholder="filmlover"/></label>
