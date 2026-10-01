@@ -1,6 +1,6 @@
 import type { MovieResponse } from '../types/movie';
 
-const apiBase = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL ?? 'http://localhost:4000');
+const apiBase = import.meta.env.VITE_API_URL ?? (import.meta.env.PROD ? 'https://afterscene.onrender.com' : 'http://localhost:4000');
 
 async function getMovies(path: string, signal?: AbortSignal): Promise<MovieResponse> {
   const response = await fetch(`${apiBase}/api/movies/${path}`, { signal });
@@ -24,4 +24,13 @@ export const getMovieSchedule = async (bucket: ScheduleBucket, year: number, sig
     throw new Error(body?.error?.message ?? 'The release schedule could not be loaded.');
   }
   return response.json() as Promise<MovieResponse>;
+};
+
+export type MovieTrailer = { id: number; title: string; poster_path: string | null; release_date: string; key: string; name: string };
+
+export const getMovieTrailers = async (signal?: AbortSignal): Promise<MovieTrailer[]> => {
+  const response = await fetch(`${apiBase}/api/movies/trailers`, { signal });
+  const body = await response.json() as { results?: MovieTrailer[]; error?: { message?: string } };
+  if (!response.ok) throw new Error(body.error?.message ?? 'Trailers could not be loaded.');
+  return body.results ?? [];
 };
