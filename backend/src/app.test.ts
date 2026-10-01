@@ -20,8 +20,16 @@ test('health and readiness return status without leaking configuration', async (
   const [healthResponse, readyResponse] = await Promise.all([fetch(`${apiUrl}/health`), fetch(`${apiUrl}/ready`)]);
   assert.equal(healthResponse.status, 200);
   assert.deepEqual(await healthResponse.json(), { status: 'ok' });
-  assert.equal(readyResponse.status, 200);
-  assert.deepEqual(await readyResponse.json(), { status: 'ready', dependencies: { tmdb: Boolean(process.env.TMDB_API_KEY) } });
+  const configured = Boolean(process.env.TMDB_API_KEY);
+  assert.equal(readyResponse.status, configured ? 200 : 503);
+  assert.deepEqual(await readyResponse.json(), { status: configured ? 'ready' : 'degraded', dependencies: { tmdb: configured } });
+});
+
+test('movie discovery explains when the server TMDB key is missing', async () => {
+  if (process.env.TMDB_API_KEY) return;
+  const response = await fetch(`${apiUrl}/api/movies/trending`);
+  assert.equal(response.status, 503);
+  assert.match((await response.json()).error.message, /TMDB_API_KEY/);
 });
 
 test('movie search validates query length before contacting TMDB', async () => {

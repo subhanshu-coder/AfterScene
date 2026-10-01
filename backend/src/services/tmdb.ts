@@ -15,9 +15,22 @@ export async function getMovieDetail(tmdbId: number): Promise<Record<string, unk
   url.searchParams.set('api_key', env.TMDB_API_KEY);
   url.searchParams.set('language', 'en-US');
   url.searchParams.set('append_to_response', 'credits,videos,similar');
-  const response = await fetch(url, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(8000) });
+  let response: Response;
+  try {
+    response = await fetch(url, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(8000) });
+  } catch {
+    throw Object.assign(new Error('Could not reach TMDB. Check the backend internet connection and try again.'), { statusCode: 502 });
+  }
   if (response.status === 404) throw Object.assign(new Error('That movie could not be found.'), { statusCode: 404 });
-  if (!response.ok) throw Object.assign(new Error('Movie data provider returned an error.'), { statusCode: response.status === 429 ? 503 : 502 });
+  if (!response.ok) {
+    const statusCode = response.status === 401 || response.status === 429 ? 503 : 502;
+    const message = response.status === 401
+      ? 'TMDB rejected the configured API key. Replace TMDB_API_KEY and restart the backend.'
+      : response.status === 429
+        ? 'TMDB is temporarily rate-limiting requests. Try again shortly.'
+        : 'Movie data provider returned an error.';
+    throw Object.assign(new Error(message), { statusCode });
+  }
   const data = await response.json() as Record<string, unknown>;
   detailCache.set(tmdbId, { expires: Date.now() + ttlMs, data });
   if (detailCache.size > 200) {
@@ -39,8 +52,21 @@ export async function getMovies(kind: 'trending' | 'search', query?: string): Pr
   url.searchParams.set('language', 'en-US');
   url.searchParams.set('page', '1');
   if (query) url.searchParams.set('query', query);
-  const response = await fetch(url, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(8000) });
-  if (!response.ok) throw Object.assign(new Error('Movie data provider returned an error.'), { statusCode: response.status === 429 ? 503 : 502 });
+  let response: Response;
+  try {
+    response = await fetch(url, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(8000) });
+  } catch {
+    throw Object.assign(new Error('Could not reach TMDB. Check the backend internet connection and try again.'), { statusCode: 502 });
+  }
+  if (!response.ok) {
+    const statusCode = response.status === 401 || response.status === 429 ? 503 : 502;
+    const message = response.status === 401
+      ? 'TMDB rejected the configured API key. Replace TMDB_API_KEY and restart the backend.'
+      : response.status === 429
+        ? 'TMDB is temporarily rate-limiting requests. Try again shortly.'
+        : 'Movie data provider returned an error.';
+    throw Object.assign(new Error(message), { statusCode });
+  }
   const data = await response.json() as TmdbResponse;
   cache.set(cacheKey, { expires: Date.now() + ttlMs, data });
   if (cache.size > 300) {

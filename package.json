@@ -5,13 +5,13 @@
   "packageManager": "pnpm@11.25.0",
   "workspaces": ["frontend", "backend"],
   "scripts": {
-    "dev": "concurrently -k -n api,web -c cyan,magenta \"npm:dev:api\" \"npm:dev:web\"",
-    "dev:api": "npm --workspace backend run dev",
-    "dev:web": "npm --workspace frontend run dev",
-    "build": "npm --workspace backend run build && npm --workspace frontend run build",
-    "typecheck": "npm --workspace backend run typecheck && npm --workspace frontend run typecheck",
-    "lint": "npm --workspace frontend run lint && npm --workspace backend run lint",
-    "test": "npm --workspace backend run test"
+    "dev": "concurrently -k -n api,web -c cyan,magenta \"corepack pnpm --filter @afterscene/backend dev\" \"corepack pnpm --filter @afterscene/frontend dev\"",
+    "dev:api": "corepack pnpm --filter @afterscene/backend dev",
+    "dev:web": "corepack pnpm --filter @afterscene/frontend dev",
+    "build": "corepack pnpm --filter @afterscene/backend build && corepack pnpm --filter @afterscene/frontend build",
+    "typecheck": "corepack pnpm --filter @afterscene/backend typecheck && corepack pnpm --filter @afterscene/frontend typecheck",
+    "lint": "corepack pnpm --filter @afterscene/frontend lint && corepack pnpm --filter @afterscene/backend lint",
+    "test": "corepack pnpm --filter @afterscene/backend test"
   },
   "devDependencies": { "concurrently": "^9.1.2", "eslint": "^9.19.0", "typescript": "^5.7.3", "typescript-eslint": "^8.24.0" }
 }

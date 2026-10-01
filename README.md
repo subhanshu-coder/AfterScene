@@ -2,7 +2,7 @@
 
 **Your movie people. Your movie identity.** Afterscene is a movie discovery and social product built around the films people love and the conversations they start.
 
-This repository starts with a working discovery vertical slice: responsive React interface, authenticated Supabase client foundation, server-side TMDB search and weekly trending, short-lived API caching, health/readiness endpoints, and a relational PostgreSQL schema protected by Row Level Security.
+The implemented product slice includes responsive movie discovery, persistent Supabase sign-in, personal ratings and watchlists, a community AfterScene score, public movie-room messages over Supabase Realtime, community posts, follow controls, and a movie diary populated when a user marks a film watched. TMDB search and weekly trending remain server-side and cached.
 
 ## Stack
 
@@ -14,9 +14,9 @@ This repository starts with a working discovery vertical slice: responsive React
 ## Run locally
 
 1. Install Node.js 20 or later.
-2. Copy `.env.example` to `.env` and set `TMDB_API_KEY`, `SUPABASE_URL`, and the server-side Supabase keys you need.
-3. In `frontend/.env.local`, set `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, and `VITE_API_URL=http://localhost:4000`. The Vite-prefixed key is the public anon key only; never put the service-role key in frontend variables.
-4. Install and start: `npm install` then `npm run dev`.
+2. Copy `.env.example` to `.env` and set `TMDB_API_KEY`, `SUPABASE_URL`, and `SUPABASE_PUBLISHABLE_KEY` (or `SUPABASE_ANON_KEY`). User-scoped backend writes use the signed-in user token and Supabase RLS; never expose a service-role key.
+3. In `frontend/.env.local`, set `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` (or `VITE_SUPABASE_ANON_KEY`), and `VITE_API_URL=http://localhost:4000`.
+4. Install and start: `corepack pnpm install` then `corepack pnpm dev`.
 5. Open `http://localhost:5173`; the API listens at `http://localhost:4000`.
 
 Apply SQL migrations with the Supabase CLI (`supabase db push`) after linking a development project. Never use production credentials for local development. The signup trigger creates the profile and preferences rows. Configure email verification and Google OAuth in Supabase Auth before enabling those provider flows.
@@ -34,11 +34,11 @@ Responses from the API provider are cached in process memory for five minutes. T
 
 ## Database and security
 
-`supabase/migrations/202609300001_initial_schema.sql` defines the initial relational model for profiles, preferences, movies, ratings, posts, comments, reviews, follows, watchlists, watch history, collections, notifications, and Movie DNA snapshots. Constraints and indexes support core reads. RLS is enabled on every table. The Supabase service role key must remain server-side and is not used by the browser app.
+`supabase/migrations/202609300001_initial_schema.sql` defines the core relational model. `supabase/migrations/202610010001_movie_community.sql` adds RLS-protected community verdicts and movie discussion messages and enables realtime for those messages. Apply new migrations to the same Supabase project before running the related feature. Ratings, watchlists, follows, posts, diary, verdicts, and messages are constrained by user-scoped RLS policies.
 
 ## Product status
 
-The project is an early foundation, not yet the full product scope. Auth UI is a first-step sign-in path; signup/onboarding, persistent social writes, feed ranking, chat/realtime, AI copilot, moderation console, and deployment automation are subsequent implementation phases. The movie search and trending endpoints are real and require a TMDB key. Account features require a Supabase project.
+This is a working early product slice, not the entire roadmap. AI copilot, recommendation ranking, full messaging, moderation console, and deployment automation remain future work. The movie search and trending endpoints require a valid TMDB key; account and community features require Supabase Auth and the migrations above.
 
 ## Brand notes
 
@@ -49,4 +49,3 @@ The project is an early foundation, not yet the full product scope. Auth UI is a
 - Mark: original clapperboard glyph with a lime ground
 
 TMDB is the source of movie metadata and images. Afterscene is not endorsed or certified by TMDB.
-# AfterScene
