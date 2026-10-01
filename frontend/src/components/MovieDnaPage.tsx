@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import type { ReactNode } from 'react';
 import { useMemo } from 'react';
 import { Dna, Film, Globe2, Star, UserRound, CalendarRange } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -67,6 +68,6 @@ export default function MovieDnaPage({ userId }: { userId: string | null }) {
   </section>;
 }
 
-function TraitCard({ title, icon, items }: { title: string; icon: React.ReactNode; items: { label: string; share: number }[] }) {
+function TraitCard({ title, icon, items }: { title: string; icon: ReactNode; items: { label: string; share: number }[] }) {
   return <article className="dna-trait-card"><h2>{icon}{title}</h2>{items.length ? items.map((item) => <div className="dna-bar-row" key={item.label}><div><span>{item.label}</span><b>{item.share}%</b></div><span className="dna-bar"><i style={{ width: `${item.share}%` }}/></span></div>) : <p className="dna-no-data">Add more film history to reveal this.</p>}</article>;
 }
