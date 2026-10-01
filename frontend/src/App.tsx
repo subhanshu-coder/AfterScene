@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { ArrowRight, Bell, Bookmark, ChevronDown, CircleHelp, Clapperboard, Compass, Film, Flame, Heart, Home, Layers3, Menu, Plus, Search, Settings2, Sparkles, Star, Users, X } from 'lucide-react';
+import { ArrowRight, Bell, Bookmark, CalendarDays, ChevronDown, CircleHelp, Clapperboard, Compass, Dna, Film, Flame, Heart, Home, Layers3, Menu, Moon, Plus, Search, Settings2, Sparkles, Star, Sun, Users, X } from 'lucide-react';
 import AuthDialog from './components/AuthDialog';
 import CommunityFeed from './components/CommunityFeed';
+import MovieDnaPage from './components/MovieDnaPage';
+import SchedulePage from './components/SchedulePage';
 import MovieDetailDialog from './components/MovieDetailDialog';
 import { discoverMovies, searchMovies } from './services/movies';
 import { getMyWatchlist, saveWatchlist } from './services/movieActions';
@@ -16,6 +18,8 @@ function App() {
   const [search, setSearch] = useState('');
   const [activeNav, setActiveNav] = useState('For you');
   const [mobileNav, setMobileNav] = useState(false);
+  const [lightMode, setLightMode] = useState(() => window.localStorage.getItem('afterscene-theme') === 'light');
+  useEffect(() => { document.documentElement.dataset.theme = lightMode ? 'light' : 'dark'; window.localStorage.setItem('afterscene-theme', lightMode ? 'light' : 'dark'); }, [lightMode]);
   const [toast, setToast] = useState('');
   const [userName, setUserName] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
@@ -45,10 +49,10 @@ function App() {
 
   const movies = (search.trim() ? results.data?.results : trending.data?.results) ?? [];
   const navItems = [
-    { label: 'For you', icon: Home }, { label: 'Discover', icon: Compass }, { label: 'Community', icon: Users },
+    { label: 'For you', icon: Home }, { label: 'Discover', icon: Compass }, { label: 'Community', icon: Users }, { label: 'Schedule', icon: CalendarDays },
   ];
   const libraryItems = [
-    { label: 'My watchlist', icon: Bookmark }, { label: 'Movie diary', icon: Layers3 }, { label: 'Your people', icon: Heart },
+    { label: 'My watchlist', icon: Bookmark }, { label: 'Movie diary', icon: Layers3 }, { label: 'Movie DNA', icon: Dna }, { label: 'Your people', icon: Heart },
   ];
 
   const showToast = (message: string) => {
@@ -84,24 +88,26 @@ function App() {
       <div className="brand"><span className="brand-mark"><Clapperboard size={19} strokeWidth={2.4} /></span><span>afterscene<span className="brand-dot">.</span></span><button className="icon-button close-nav" onClick={() => setMobileNav(false)} aria-label="Close menu"><X size={19} /></button></div>
       <div className="profile-switch"><div className="avatar avatar-lime">{userName?.slice(0, 1).toUpperCase() ?? 'R'}</div><div className="profile-switch-copy"><b>{userName ?? 'Your movie self'}</b><span>{userName ? 'Your space' : 'Make it yours'}</span></div><ChevronDown size={16} /></div>
       <div className="nav-caption">YOUR SPACE</div>
-      <nav className="nav-list">{navItems.map(({ label, icon: Icon }) => <button key={label} className={`nav-item ${activeNav === label ? 'nav-active' : ''}`} onClick={() => { setActiveNav(label); setMobileNav(false); }}><Icon size={18} /><span>{label}</span>{label === 'Discover' && <span className="nav-new">NEW</span>}</button>)}</nav>
+      <nav className="nav-list">{navItems.map(({ label, icon: Icon }) => <button key={label} title={label} aria-label={label} className={`nav-item ${activeNav === label ? 'nav-active' : ''}`} onClick={() => { setActiveNav(label); setMobileNav(false); }}><Icon size={19} /><span>{label}</span></button>)}</nav>
       <div className="nav-caption library-caption">YOUR COLLECTION</div>
-      <nav className="nav-list">{libraryItems.map(({ label, icon: Icon }) => <button key={label} className={`nav-item ${activeNav === label ? 'nav-active' : ''}`} onClick={() => { setActiveNav(label); setMobileNav(false); if (!userName) setAuthMode('signin'); }}><Icon size={18} /><span>{label}</span></button>)}</nav>
-      <div className="sidebar-bottom"><div className="dna-card"><div className="dna-orbit orbit-one"/><div className="dna-orbit orbit-two"/><Sparkles size={17} className="dna-spark"/><span className="dna-kicker">YOUR TASTE, IN A NUTSHELL</span><strong>Movie DNA</strong><p>Every film you love says something about you.</p><button onClick={() => showToast(userName ? 'Rate a few films to start building your Movie DNA.' : 'Join Afterscene to build your Movie DNA.')}>Explore your taste <ArrowRight size={14} /></button></div><button className="nav-item help-item" onClick={() => showToast('Afterscene is an early preview. We’re building this together.')}><CircleHelp size={17}/><span>Help & feedback</span></button><div className="sidebar-footer"><span>Made for the love of film</span><span>v0.1 · Preview</span></div></div>
+      <nav className="nav-list">{libraryItems.map(({ label, icon: Icon }) => <button key={label} title={label} aria-label={label} className={`nav-item ${activeNav === label ? 'nav-active' : ''}`} onClick={() => { setActiveNav(label); setMobileNav(false); if (!userName) setAuthMode('signin'); }}><Icon size={19} /><span>{label}</span></button>)}</nav>
+      <div className="sidebar-bottom"><div className="dna-card"><div className="dna-orbit orbit-one"/><div className="dna-orbit orbit-two"/><Sparkles size={17} className="dna-spark"/><span className="dna-kicker">YOUR TASTE, IN A NUTSHELL</span><strong>Movie DNA</strong><p>Every film you love says something about you.</p><button title="Open Movie DNA" aria-label="Open Movie DNA" onClick={() => setActiveNav('Movie DNA')}><ArrowRight size={14} /></button></div><button className="nav-item help-item" onClick={() => showToast('Afterscene is an early preview. We’re building this together.')}><CircleHelp size={17}/><span>Help & feedback</span></button><div className="sidebar-footer"><span>Made for the love of film</span><span>v0.1 · Preview</span></div></div>
     </aside>
     {mobileNav && <button className="nav-scrim" onClick={() => setMobileNav(false)} aria-label="Close navigation" />}
 
     <main className="main-column">
-      <header className="topbar"><button className="icon-button mobile-menu" onClick={() => setMobileNav(true)} aria-label="Open menu"><Menu size={20}/></button><div className="mobile-brand"><span className="brand-mark"><Clapperboard size={16}/></span>afterscene<span className="brand-dot">.</span></div><div className="breadcrumbs"><span>Home</span><span className="crumb-divider">/</span><b>{activeNav}</b></div><div className="topbar-actions"><button className="icon-button search-shortcut" onClick={() => document.getElementById('movie-search')?.focus()} aria-label="Search movies"><Search size={18}/></button><button className="icon-button notification-button" onClick={() => showToast('You’re all caught up.')} aria-label="Notifications"><Bell size={18}/><i/></button><button className="top-avatar" onClick={() => void accountAction()} aria-label={userName ? 'Sign out' : 'Sign in'}>{userName?.slice(0, 1).toUpperCase() ?? <Users size={16}/>}</button></div></header>
+      <header className="topbar"><button className="icon-button mobile-menu" onClick={() => setMobileNav(true)} aria-label="Open menu"><Menu size={20}/></button><div className="mobile-brand"><span className="brand-mark"><Clapperboard size={16}/></span>afterscene<span className="brand-dot">.</span></div><div className="breadcrumbs"><span>Home</span><span className="crumb-divider">/</span><b>{activeNav}</b></div><div className="topbar-actions"><button className="icon-button theme-toggle" onClick={() => setLightMode((mode) => !mode)} aria-label={lightMode ? 'Switch to dark mode' : 'Switch to light mode'} title={lightMode ? 'Dark mode' : 'Light mode'}>{lightMode ? <Moon size={18}/> : <Sun size={18}/>}</button><button className="icon-button search-shortcut" onClick={() => document.getElementById('movie-search')?.focus()} aria-label="Search movies"><Search size={18}/></button><button className="icon-button notification-button" onClick={() => showToast('You’re all caught up.')} aria-label="Notifications"><Bell size={18}/><i/></button><button className="top-avatar" onClick={() => void accountAction()} aria-label={userName ? 'Sign out' : 'Sign in'}>{userName?.slice(0, 1).toUpperCase() ?? <Users size={16}/>}</button></div></header>
 
-      <div className={`content-wrap ${activeNav === 'Community' ? 'page-community' : activeNav === 'My watchlist' ? 'page-watchlist' : ''}`}>
-        {activeNav === 'Community' && <CommunityFeed userId={userId} onSignIn={() => setAuthMode('signin')}/>}
+      <div className={`content-wrap ${activeNav === 'Community' ? 'page-community' : activeNav === 'My watchlist' ? 'page-watchlist' : activeNav === 'Schedule' ? 'page-schedule' : activeNav === 'Movie DNA' ? 'page-dna' : ''}`}>
+        {activeNav === 'Community' && <CommunityFeed userId={userId} onSignIn={() => setAuthMode('signin')} onOpenMovie={(movie) => setSelectedMovie(movie)}/>}
+        {activeNav === 'Schedule' && <SchedulePage onOpen={setSelectedMovie}/>}
+        {activeNav === 'Movie DNA' && <MovieDnaPage userId={userId}/>}
         {activeNav === 'My watchlist' && <section className="watchlist-page"><div className="community-page-heading"><span><Bookmark size={14}/> YOUR COLLECTION</span><h1>Your next great<br/><i>watch is in here.</i></h1><p>Movies you saved for later, all in one place.</p></div>{!userId ? <div className="community-empty"><Bookmark size={25}/><b>Sign in to see your watchlist.</b><button className="page-primary" onClick={() => setAuthMode('signin')}>Sign in</button></div> : watchlist.isPending ? <p className="community-state">Loading your watchlist…</p> : watchlist.isError ? <div className="community-state community-error">{watchlist.error.message}</div> : watchlist.data?.results.length ? <div className="movie-grid">{watchlist.data.results.map((movie, index) => <MovieCard key={movie.id} movie={movie} index={index} onOpen={setSelectedMovie} onSave={addToWatchlist}/>)}</div> : <div className="community-empty"><Bookmark size={25}/><b>Your watchlist is ready for its first movie.</b><span>Open a film and tap “Add to watchlist” to save it here.</span><button className="page-primary" onClick={() => setActiveNav('Discover')}>Discover movies</button></div>}</section>}
-        <section className="welcome-row"><div><div className="eyebrow"><span className="eyebrow-line"/> YOUR FILM SPACE</div><h1 className="compact-welcome">Welcome back<span>.</span></h1></div></section>
+        {activeNav !== 'Community' && activeNav !== 'Schedule' && activeNav !== 'Movie DNA' && activeNav !== 'My watchlist' && <section className="welcome-row"><div><div className="eyebrow"><span className="eyebrow-line"/> YOUR FILM SPACE</div><h1 className="compact-welcome">Welcome back<span>.</span></h1></div></section>
 
-        <section className="mood-strip"><div className="mood-copy"><span className="mood-icon"><Sparkles size={17}/></span><div><b>Find a film for your mood</b><span>Coming soon</span></div></div><button className="mood-arrow" onClick={() => showToast("Mood picks are coming soon.")} aria-label="Mood picks coming soon"><ArrowRight size={17}/></button></section>
+        {activeNav !== 'Community' && activeNav !== 'Schedule' && activeNav !== 'Movie DNA' && activeNav !== 'My watchlist' && <section className="mood-strip"><div className="mood-copy"><span className="mood-icon"><Sparkles size={17}/></span><div><b>Find a film for your mood</b><span>Coming soon</span></div></div><button className="mood-arrow" onClick={() => showToast("Mood picks are coming soon.")} aria-label="Mood picks coming soon"><ArrowRight size={17}/></button></section>
 
-        <section className="film-section"><div className="section-heading"><div><div className="section-eyebrow"><Flame size={13}/> DISCOVER</div><h2>{search.trim() ? 'Search results' : 'Popular films'}<span className="heading-dot">.</span></h2></div><div className="section-tools"><label className="search-box"><Search size={17}/><input id="movie-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Find a film…"/><kbd>/</kbd></label><button className="filter-button" onClick={() => showToast('Genre filters are coming soon.')}><Settings2 size={16}/><span>Filters</span></button></div></div>
+        {activeNav !== 'Community' && activeNav !== 'Schedule' && activeNav !== 'Movie DNA' && activeNav !== 'My watchlist' && <section className="film-section"><div className="section-heading"><div><div className="section-eyebrow"><Flame size={13}/> DISCOVER</div><h2>{search.trim() ? 'Search results' : 'Popular films'}<span className="heading-dot">.</span></h2></div><div className="section-tools"><label className="search-box"><Search size={17}/><input id="movie-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Find a film…"/><kbd>/</kbd></label><button className="filter-button" onClick={() => showToast('Genre filters are coming soon.')}><Settings2 size={16}/><span>Filters</span></button></div></div>
           {((search.trim() && results.isFetching) || (!search.trim() && trending.isFetching)) && <div className="movie-grid">{Array.from({ length: 5 }, (_, i) => <div className="movie-skeleton" key={i}><div className="skeleton-poster"/><div className="skeleton-line"/><div className="skeleton-short"/></div>)}</div>}
           {(search.trim() ? results.isError : trending.isError) && <div className="error-note"><Film size={18}/><div><b>Movie data couldn’t load.</b><span>{(search.trim() ? results.error : trending.error)?.message}</span></div><button onClick={() => search.trim() ? void results.refetch() : void trending.refetch()}>Try again</button></div>}
           {!search.trim() && !trending.isFetching && !trending.isError && movies.length === 0 && <div className="setup-note"><div className="setup-poster"><Film size={23}/></div><div><span className="setup-label">FIRST, A LITTLE SETUP</span><h3>Your movie shelf is almost ready.</h3><p>Add your TMDB API key and Supabase project credentials to start discovering and saving real films.</p><a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noreferrer">Get a TMDB key <ArrowUpRightIcon/></a></div></div>}
@@ -112,12 +118,12 @@ function App() {
 
 
 
-        <footer className="page-footer"><span>AFTERSCENE <span className="brand-dot">®</span> — MADE FOR THE LOVE OF FILM</span><span>Films powered by TMDB <span className="footer-heart">♥</span></span></footer>
+        {activeNav !== 'Community' && activeNav !== 'Schedule' && activeNav !== 'Movie DNA' && activeNav !== 'My watchlist' && <footer className="page-footer"><span>AFTERSCENE <span className="brand-dot">®</span> — MADE FOR THE LOVE OF FILM</span><span>Films powered by TMDB <span className="footer-heart">♥</span></span></footer>
       </div>
     </main>
 
  {toast && <motion.div className="toast" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}><Sparkles size={16}/>{toast}<button onClick={() => setToast('')} aria-label="Dismiss message"><X size={15}/></button></motion.div>}
-    <nav className="mobile-bottom-nav" aria-label="Mobile navigation">{navItems.map(({ label, icon: Icon }) => <button key={label} className={activeNav === label ? 'bottom-active' : ''} onClick={() => setActiveNav(label)}><Icon size={19}/><span>{label === 'For you' ? 'Home' : label}</span></button>)}<button onClick={() => { setActiveNav('My watchlist'); if (!userId) setAuthMode('signin'); }}><Bookmark size={19}/><span>Watchlist</span></button></nav>
+    <nav className="mobile-bottom-nav" aria-label="Mobile navigation">{navItems.map(({ label, icon: Icon }) => <button key={label} title={label} aria-label={label} className={activeNav === label ? 'bottom-active' : ''} onClick={() => setActiveNav(label)}><Icon size={19}/></button>)}<button onClick={() => { setActiveNav('My watchlist'); if (!userId) setAuthMode('signin'); }}><Bookmark size={19}/><span>Watchlist</span></button></nav>
     {selectedMovie && <MovieDetailDialog movie={selectedMovie} userName={userName} userId={userId} onClose={() => setSelectedMovie(null)} onSignIn={() => setAuthMode('signin')} onToast={showToast}/>}
     {authMode && <AuthDialog mode={authMode} onClose={() => setAuthMode(null)} onModeChange={setAuthMode} onSuccess={(name) => { setUserName(name); setAuthMode(null); showToast('Welcome to Afterscene.'); }} />}
   </div>;
