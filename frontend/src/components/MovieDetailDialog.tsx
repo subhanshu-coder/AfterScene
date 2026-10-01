@@ -8,7 +8,7 @@ import MovieDiscussion from './MovieDiscussion';
 
 type MovieDetails = Movie & { runtime?: number; genres?: { id: number; name: string }[]; tagline?: string; credits?: { crew?: { id: number; name: string; job: string }[]; cast?: { id: number; name: string; character: string; profile_path: string | null }[] }; videos?: { results?: { id: string; name: string; key: string; site: string; type: string }[] } };
 type Props = { movie: Movie; userName: string | null; userId: string | null; onClose: () => void; onSignIn: () => void; onToast: (message: string) => void };
-const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const apiBase = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL ?? 'http://localhost:4000');
 const posterBase = 'https://image.tmdb.org/t/p/w500';
 const backdropBase = 'https://image.tmdb.org/t/p/w1280';
 
