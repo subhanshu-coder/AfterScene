@@ -24,7 +24,7 @@ app.use(helmet({
   },
 }));
 const localOrigins = new Set(['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:4173', 'http://127.0.0.1:4173']);
-const deploymentOrigins = ['https://afterscene.onrender.com', process.env.RENDER_EXTERNAL_URL, process.env.VERCEL_URL, process.env.VERCEL_PROJECT_PRODUCTION_URL]
+const deploymentOrigins = ['https://afterscene.onrender.com', 'https://after-scene-git-main-subhanshupal7-gmailcoms-projects.vercel.app', process.env.RENDER_EXTERNAL_URL, process.env.VERCEL_URL, process.env.VERCEL_PROJECT_PRODUCTION_URL]
   .filter((origin): origin is string => Boolean(origin))
   .map((origin) => origin.startsWith('http') ? origin : `https://${origin}`);
 app.use(cors({
