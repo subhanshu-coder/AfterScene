@@ -8,7 +8,7 @@ const detailCache = new Map<number, { expires: number; data: Record<string, unkn
 const ttlMs = 5 * 60_000;
 
 export async function getMovieDetail(tmdbId: number): Promise<Record<string, unknown>> {
-  if (!env.TMDB_API_KEY) throw Object.assign(new Error('Movie discovery is not configured yet.'), { statusCode: 503 });
+  if (!env.TMDB_API_KEY) throw Object.assign(new Error('Movie discovery is not configured yet. Add TMDB_API_KEY to the backend environment.'), { statusCode: 503 });
   const cached = detailCache.get(tmdbId);
   if (cached && cached.expires > Date.now()) return cached.data;
   const url = new URL(`${env.TMDB_BASE_URL}/movie/${tmdbId}`);
@@ -42,7 +42,7 @@ export async function getMovieDetail(tmdbId: number): Promise<Record<string, unk
 }
 
 export async function getMovies(kind: 'trending' | 'search', query?: string): Promise<TmdbResponse> {
-  if (!env.TMDB_API_KEY) throw Object.assign(new Error('Movie discovery is not configured yet.'), { statusCode: 503 });
+  if (!env.TMDB_API_KEY) throw Object.assign(new Error('Movie discovery is not configured yet. Add TMDB_API_KEY to the backend environment.'), { statusCode: 503 });
   const cacheKey = `${kind}:${query ?? ''}`;
   const cached = cache.get(cacheKey);
   if (cached && cached.expires > Date.now()) return cached.data;
