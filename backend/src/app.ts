@@ -10,9 +10,12 @@ export const app = express();
 app.disable('x-powered-by');
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 const localOrigins = new Set(['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:4173', 'http://127.0.0.1:4173']);
+const vercelOrigins = [process.env.VERCEL_URL, process.env.VERCEL_PROJECT_PRODUCTION_URL]
+  .filter((hostname): hostname is string => Boolean(hostname))
+  .map((hostname) => `https://${hostname}`);
 app.use(cors({
   origin(origin, callback) {
-    if (!origin || origin === env.CLIENT_URL || (process.env.NODE_ENV !== 'production' && localOrigins.has(origin))) return callback(null, true);
+    if (!origin || origin === env.CLIENT_URL || vercelOrigins.includes(origin) || (process.env.NODE_ENV !== 'production' && localOrigins.has(origin))) return callback(null, true);
     return callback(new Error('Origin is not allowed by CORS.'));
   },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
