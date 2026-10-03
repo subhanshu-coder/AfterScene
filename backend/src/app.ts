@@ -43,8 +43,8 @@ app.use((request, response, next) => {
   response.on('finish', () => console.info(JSON.stringify({ level: 'info', requestId, method: request.method, path: request.path, status: response.statusCode, durationMs: Math.round(performance.now() - startedAt), time: new Date().toISOString() })));
   next();
 });
-app.get('/health', (_request, response) => response.json({ status: 'ok' }));
-app.get('/ready', (_request, response) => {
+app.get(['/health', '/api/health'], (_request, response) => response.json({ status: 'ok' }));
+app.get(['/ready', '/api/ready'], (_request, response) => {
   const tmdbConfigured = Boolean(process.env.TMDB_API_KEY);
   response.status(tmdbConfigured ? 200 : 503).json({ status: tmdbConfigured ? 'ready' : 'degraded', dependencies: { tmdb: tmdbConfigured } });
 });
@@ -60,3 +60,5 @@ app.get('*', (_request, response, next) => {
 });
 app.use((_request, response) => response.status(404).json({ error: { code: 'NOT_FOUND', message: 'That page could not be found.' } }));
 app.use(errorHandler);
+
+export default app;
