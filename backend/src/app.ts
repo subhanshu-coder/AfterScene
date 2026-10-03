@@ -27,14 +27,21 @@ const localOrigins = new Set(['http://localhost:5173', 'http://127.0.0.1:5173', 
 const deploymentOrigins = ['https://afterscene.onrender.com', 'https://after-scene-git-main-subhanshupal7-gmailcoms-projects.vercel.app', process.env.RENDER_EXTERNAL_URL, process.env.VERCEL_URL, process.env.VERCEL_PROJECT_PRODUCTION_URL]
   .filter((origin): origin is string => Boolean(origin))
   .map((origin) => origin.startsWith('http') ? origin : `https://${origin}`);
-app.use(cors({
-  origin(origin, callback) {
-    if (!origin || origin === env.CLIENT_URL || deploymentOrigins.includes(origin) || (process.env.NODE_ENV !== 'production' && localOrigins.has(origin))) return callback(null, true);
-    return callback(new Error('Origin is not allowed by CORS.'));
-  },
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-  maxAge: 600,
-}));
+app.use((request, response, next) => {
+  const forwardedHost = request.get('x-forwarded-host')?.split(',')[0]?.trim();
+  const forwardedProtocol = request.get('x-forwarded-proto')?.split(',')[0]?.trim();
+  const requestOrigin = forwardedHost
+    ? `${forwardedProtocol ?? request.protocol}://${forwardedHost}`
+    : `${request.protocol}://${request.get('host')}`;
+  return cors({
+    origin(origin, callback) {
+      if (!origin || origin === requestOrigin || origin === env.CLIENT_URL || deploymentOrigins.includes(origin) || (process.env.NODE_ENV !== 'production' && localOrigins.has(origin))) return callback(null, true);
+      return callback(new Error('Origin is not allowed by CORS.'));
+    },
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+    maxAge: 600,
+  })(request, response, next);
+});
 app.use(express.json({ limit: '32kb' }));
 app.use((request, response, next) => {
   const requestId = randomUUID();
