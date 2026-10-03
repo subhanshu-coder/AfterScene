@@ -87,6 +87,7 @@ function App() {
   return <div className="app-shell">
     <aside className={`sidebar ${mobileNav ? 'sidebar-open' : ''}`}>
       <div className="brand"><span className="brand-mark"><Clapperboard size={19} strokeWidth={2.4} /></span><span>afterscene<span className="brand-dot">.</span></span><button className="icon-button close-nav" onClick={() => setMobileNav(false)} aria-label="Close menu"><X size={19} /></button></div>
+      <div className="nav-drawer-heading"><b>All pages</b><span>Choose a section to open</span></div>
       <div className="profile-switch"><div className="avatar avatar-lime">{userName?.slice(0, 1).toUpperCase() ?? 'R'}</div><div className="profile-switch-copy"><b>{userName ?? 'Your movie self'}</b><span>{userName ? 'Your space' : 'Make it yours'}</span></div><ChevronDown size={16} /></div>
       <div className="nav-caption">YOUR SPACE</div>
       <nav className="nav-list">{navItems.map(({ label, icon: Icon }) => <button key={label} title={label} aria-label={label} className={`nav-item ${activeNav === label ? 'nav-active' : ''}`} onClick={() => { setActiveNav(label); setMobileNav(false); }}><Icon size={19} /><span>{label}</span></button>)}</nav>
