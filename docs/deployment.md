@@ -1,18 +1,18 @@
 # Deployment
 
-## Vercel
+## Vercel Services
 
-The connected Vercel workspace uses separate projects: frontend root `frontend/` and Express backend root `backend/`. Configure the frontend project's `VITE_API_URL` to the backend project's HTTPS production domain without a trailing slash. Configure backend `CLIENT_URL` to the frontend production origin. The backend exports its Express app so Vercel can run it as a function. The root `vercel.json` and `api/[...path].ts` additionally support a consolidated project rooted at the repository root.
+Import the GitHub repository with the Vercel Services framework from the repository root. Root `vercel.json` defines the frontend service (`frontend/`, Vite) and backend service (`backend/`, Express). It routes `/api/*`, `/health`, and `/ready` to the backend and sends other requests to the frontend. The frontend uses same-origin `/api` URLs; do not configure a Render URL or `VITE_API_URL` in production.
 
-Set these environment variables for the appropriate project and environment:
+Configure variables for the correct Vercel service and environment:
 
-- Backend, server-only: `TMDB_API_KEY`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` (or `SUPABASE_ANON_KEY`), and `SUPABASE_SERVICE_ROLE_KEY`.
-- Frontend, build-time public values: `VITE_API_URL`, `VITE_SUPABASE_URL`, and `VITE_SUPABASE_PUBLISHABLE_KEY` (or `VITE_SUPABASE_ANON_KEY`). Never put a service-role key in a `VITE_*` variable.
+- Backend service (server-only): `TMDB_API_KEY`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` or `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY`.
+- Frontend service (build-time public values): `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` or `VITE_SUPABASE_ANON_KEY`.
 
-Run all Supabase migrations against the intended project before enabling database-backed features. Configure Google OAuth redirect URLs and email authentication URLs for the production frontend domain. Keep Preview and Production values separate; use non-production Supabase credentials for Preview where possible.
+Never add a service-role key to a `VITE_*` variable. Supabase publishable/anon keys are public and must be protected by RLS. Run all migrations against the intended Supabase project before enabling the related feature. Configure Google OAuth redirect URLs and email auth URLs for the Vercel site domain.
 
-## Docker deployment
+## Docker
 
-The multi-stage Dockerfiles build a static Nginx frontend and a non-root Node API. `docker compose up --build` serves the product at `http://localhost:8080` and proxies `/api` to the backend. Supabase remains a hosted dependency; Docker Compose does not start a local database.
+The multi-stage Dockerfiles build a static Nginx frontend and a non-root Node API. `docker compose up --build` serves the product at `http://localhost:8080` and proxies `/api` to the backend. Supabase remains hosted; Docker Compose does not start a local database.
 
-CI validates lint, types, API tests, and both production builds. Verify the backend's `/health`, `/ready`, and `/api/movies/trending` endpoints and test a frontend movie search after deployment. Keep development, staging, and production Supabase projects separate.
+Verify `/health`, `/ready`, movie discovery, login, and a user-scoped rating/watchlist mutation after deployment. Keep Preview and Production Supabase credentials separate.
