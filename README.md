@@ -23,6 +23,12 @@ Apply SQL migrations with the Supabase CLI (`supabase db push`) after linking a 
 
 Without a TMDB key, the interface shows a setup prompt instead of fabricated movie data. TMDB attribution is shown in the product footer. Review TMDB's current terms and branding requirements before public launch.
 
+## Deploy to Vercel
+
+Import the repository using Vercel Services. The root `vercel.json` defines a Vite frontend service (`frontend/`) and Express backend service (`backend/`), routes `/api/*` to the backend, and sends the remaining site traffic to the frontend. Frontend API calls stay same-origin. The Express app is exported for Vercel and retains `/health` and `/ready`.
+
+Set `TMDB_API_KEY`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` (or `SUPABASE_ANON_KEY`), and `SUPABASE_SERVICE_ROLE_KEY` as backend-only variables. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` (or `VITE_SUPABASE_ANON_KEY`) for the frontend service. Never expose the service-role key using a `VITE_*` variable. Apply Supabase migrations before using the corresponding database features.
+
 ## API
 
 - `GET /health` — process health
