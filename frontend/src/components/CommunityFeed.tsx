@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Bookmark, Clapperboard, Heart, MessageCircle, Newspaper, Repeat2, Send, Sparkles, Star, Users, Video } from 'lucide-react';
+import { Bookmark, Clapperboard, Heart, ImagePlus, MessageCircle, Newspaper, Repeat2, Send, Sparkles, Star, Users, Video, X } from 'lucide-react';
 import { getMovieSchedule, getMovieTrailers } from '../services/movies';
 import type { Movie } from '../types/movie';
 import { supabase } from '../lib/supabase';
@@ -8,7 +8,7 @@ import { supabase } from '../lib/supabase';
 type Space = 'Feed' | 'News' | 'Discussions' | 'Trailers' | 'Reviews' | 'Collections';
 type Profile = { id: string; username: string; display_name: string; avatar_url?: string | null };
 type Comment = { id: string; author_id: string; body: string; created_at: string; profile?: Profile };
-type Post = { id: string; author_id: string; kind: string; body: string; is_spoiler: boolean; created_at: string; profile?: Profile; liked: boolean; likes: number; reposted: boolean; reposts: number; followed: boolean; comments: Comment[] };
+type Post = { id: string; author_id: string; kind: string; body: string | null; image_path: string | null; is_spoiler: boolean; created_at: string; profile?: Profile; liked: boolean; likes: number; reposted: boolean; reposts: number; followed: boolean; comments: Comment[] };
 
 type ReviewComment = { id: string; review_id: string; author_id: string; body: string; created_at: string; profile?: Profile };
 type Review = { id: string; author_id: string; movie_id: string; title: string | null; body: string; rating: number; created_at: string; profile?: Profile; movie?: { title: string; tmdb_id: number; poster_path: string | null }; comments: ReviewComment[] };
@@ -18,6 +18,10 @@ const spaces: { name: Space; icon: typeof Users }[] = [
   { name: 'Feed', icon: Users }, { name: 'News', icon: Newspaper }, { name: 'Discussions', icon: MessageCircle },
   { name: 'Trailers', icon: Video }, { name: 'Reviews', icon: Star }, { name: 'Collections', icon: Bookmark },
 ];
+
+function postImageUrl(path: string) {
+  return supabase?.storage.from('post-images').getPublicUrl(path).data.publicUrl ?? '';
+}
 
 function databaseMessage(error: { code?: string; message?: string }) {
   if (error.code === '42P01' || error.code === 'PGRST205') return 'The community tables are missing in Supabase. Apply the project migrations, then retry.';
@@ -35,7 +39,7 @@ async function getProfiles(ids: string[]) {
 
 async function getPosts(space: Space, userId: string | null): Promise<Post[]> {
   if (!supabase) throw new Error('Supabase is not configured for this deployment. Add the VITE_SUPABASE_URL and publishable key.');
-  let request = supabase.from('posts').select('id,author_id,kind,body,is_spoiler,created_at').order('created_at', { ascending: false }).limit(40);
+  let request = supabase.from('posts').select('id,author_id,kind,body,image_path,is_spoiler,created_at').order('created_at', { ascending: false }).limit(40);
   if (space === 'Discussions') request = request.in('kind', ['discussion', 'question']);
   const { data, error } = await request;
   if (error) throw new Error(databaseMessage(error));
@@ -111,11 +115,20 @@ async function getCollections(): Promise<Collection[]> {
 export default function CommunityFeed({ userId, onSignIn, onOpenMovie }: { userId: string | null; onSignIn: () => void; onOpenMovie: (movie: Movie) => void }) {
   const [space, setSpace] = useState<Space>('Feed');
   const [body, setBody] = useState('');
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState('');
   const [kind, setKind] = useState<'opinion' | 'question' | 'discussion' | 'recommendation'>('opinion');
   const [notice, setNotice] = useState('');
   const [busyPost, setBusyPost] = useState(false);
   const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
   const client = useQueryClient();
+
+  useEffect(() => {
+    if (!selectedImage) { setImagePreview(''); return; }
+    const preview = URL.createObjectURL(selectedImage);
+    setImagePreview(preview);
+    return () => URL.revokeObjectURL(preview);
+  }, [selectedImage]);
   const posts = useQuery({ queryKey: ['community-posts', space, userId], enabled: Boolean(supabase && (space === 'Feed' || space === 'Discussions')), queryFn: () => getPosts(space, userId) });
   const reviews = useQuery({ queryKey: ['community-reviews'], enabled: Boolean(supabase && space === 'Reviews'), queryFn: getReviews });
   const collections = useQuery({ queryKey: ['community-collections'], enabled: Boolean(supabase && space === 'Collections'), queryFn: getCollections });
@@ -132,14 +145,28 @@ export default function CommunityFeed({ userId, onSignIn, onOpenMovie }: { userI
   async function publish(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!userId) return onSignIn();
-    if (!supabase || !body.trim() || busyPost) return;
+    if (!supabase || (!body.trim() && !selectedImage) || busyPost) return;
     setBusyPost(true); setNotice('');
-    const { error } = await supabase.from('posts').insert({ author_id: userId, kind, body: body.trim() });
-    setBusyPost(false);
-    if (error) return setNotice(databaseMessage(error));
-    setBody('');
-    setNotice('Posted');
-    void client.invalidateQueries({ queryKey: ['community-posts'] });
+    let imagePath: string | null = null;
+    try {
+      if (selectedImage) {
+        const extension = selectedImage.type === 'image/png' ? 'png' : selectedImage.type === 'image/webp' ? 'webp' : 'jpg';
+        imagePath = userId + '/' + crypto.randomUUID() + '.' + extension;
+        const { error: uploadError } = await supabase.storage.from('post-images').upload(imagePath, selectedImage, { contentType: selectedImage.type, upsert: false });
+        if (uploadError) throw uploadError;
+      }
+      const { error } = await supabase.from('posts').insert({ author_id: userId, kind, body: body.trim() || null, image_path: imagePath });
+      if (error) throw error;
+      setBody('');
+      setSelectedImage(null);
+      setNotice('Posted');
+      void client.invalidateQueries({ queryKey: ['community-posts'] });
+    } catch (error) {
+      if (imagePath) await supabase.storage.from('post-images').remove([imagePath]);
+      setNotice(error instanceof Error ? error.message : databaseMessage(error as { code?: string; message?: string }));
+    } finally {
+      setBusyPost(false);
+    }
   }
 
   async function toggleLike(post: Post) {
@@ -199,11 +226,11 @@ export default function CommunityFeed({ userId, onSignIn, onOpenMovie }: { userI
     <div className="community-spaces" role="tablist" aria-label="Community spaces">{spaces.map(({ name, icon: Icon }) => <button type="button" role="tab" aria-selected={space === name} key={name} onClick={() => setSpace(name)}><Icon size={16}/><span>{name}</span></button>)}</div>
     {notice && <p className="community-state community-notice" role="status">{notice}</p>}
     {(space === 'Feed' || space === 'Discussions') && <div className="community-stream">
-      <form className="community-composer" onSubmit={(event) => void publish(event)}><textarea value={body} onChange={(event) => setBody(event.target.value)} maxLength={5000} placeholder="What movie is on your mind?" aria-label="Write a community post"/><div className="composer-controls"><label><span>Post as</span><select value={kind} onChange={(event) => setKind(event.target.value as typeof kind)}><option value="opinion">Opinion</option><option value="discussion">Discussion</option><option value="question">Question</option><option value="recommendation">Recommendation</option></select></label><span className="composer-notice">{notice || 'Spoilers? Mark them in the movie discussion.'}</span><button disabled={!body.trim() || busyPost}><Send size={15}/> Post</button></div></form>
+      <form className="community-composer" onSubmit={(event) => void publish(event)}><textarea value={body} onChange={(event) => setBody(event.target.value)} maxLength={5000} placeholder="What movie is on your mind?" aria-label="Write a community post"/><div className="composer-attachment"><label className="image-upload-button"><ImagePlus size={16}/><span>Add a photo</span><input type="file" accept="image/jpeg,image/png,image/webp" aria-label="Choose a photo for your post" onChange={(event) => { const file = event.target.files?.[0]; if (!file) return; if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { setNotice('Choose a JPG, PNG, or WebP image.'); event.target.value = ''; return; } if (file.size > 5 * 1024 * 1024) { setNotice('Images must be 5 MB or smaller.'); event.target.value = ''; return; } setSelectedImage(file); setNotice(''); }}/></label><span>JPG, PNG or WebP · up to 5 MB</span>{imagePreview && <div className="composer-image-preview"><img src={imagePreview} alt="Selected image preview"/><button type="button" onClick={() => setSelectedImage(null)} aria-label="Remove selected image"><X size={16}/></button></div>}</div><div className="composer-controls"><label><span>Post as</span><select value={kind} onChange={(event) => setKind(event.target.value as typeof kind)}><option value="opinion">Opinion</option><option value="discussion">Discussion</option><option value="question">Question</option><option value="recommendation">Recommendation</option></select></label><span className="composer-notice">{notice || 'Spoilers? Mark them in the movie discussion.'}</span><button disabled={(!body.trim() && !selectedImage) || busyPost}><Send size={15}/>{busyPost ? 'Posting…' : 'Post'}</button></div></form>
       {posts.isPending && <p className="community-state">Loading posts…</p>}
       {posts.isError && <div className="community-error-panel"><b>Posts couldn’t load.</b><span>{posts.error.message}</span><button type="button" onClick={() => void posts.refetch()}>Retry</button></div>}
       {!posts.isPending && !posts.isError && posts.data?.length === 0 && <div className="community-empty"><MessageCircle size={25}/><b>{space === 'Discussions' ? 'No discussions yet.' : 'Your feed starts here.'}</b><span>Start a conversation about a film.</span></div>}
-      <div className="community-post-list">{posts.data?.map((post) => <article className="community-post" key={post.id}><button type="button" className="community-post-avatar" aria-label={`Open @${post.profile?.username ?? 'filmlover'} profile`} onClick={() => setSelectedProfile(post.author_id)}>{post.profile?.avatar_url ? <img src={post.profile.avatar_url} alt=""/> : (post.profile?.display_name ?? post.profile?.username ?? 'F').slice(0,1).toUpperCase()}</button><div className="community-post-body"><header><div><button className="profile-name-button" onClick={() => setSelectedProfile(post.author_id)}><b>{post.profile?.display_name ?? post.profile?.username ?? 'Film lover'}</b></button><span>@{post.profile?.username ?? 'filmlover'} · {new Date(post.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</span></div>{post.author_id !== userId && <button className="social-follow" type="button" aria-label={post.followed ? 'Unfollow person' : 'Follow person'} title={post.followed ? 'Unfollow' : 'Follow'} onClick={() => void toggleFollow(post)}>{post.followed ? 'Following' : 'Follow'}</button>}</header><span className="post-kind">{post.kind}</span><p>{post.body}</p><footer className="post-social-actions"><button type="button" className={post.liked ? 'is-liked' : ''} aria-label={post.liked ? 'Unlike post' : 'Like post'} onClick={() => void toggleLike(post)}><Heart size={16} fill={post.liked ? 'currentColor' : 'none'}/><span>{post.likes}</span></button><button type="button" aria-label="Show comments" onClick={() => document.getElementById(`comment-${post.id}`)?.focus()}><MessageCircle size={16}/><span>{post.comments.length}</span></button><button type="button" className={post.reposted ? 'is-reposted' : ''} aria-label={post.reposted ? 'Undo repost' : 'Repost'} onClick={() => void toggleRepost(post)}><Repeat2 size={16}/><span>{post.reposts}</span></button></footer>{post.comments.slice(-2).map((comment) => <div className="inline-comment" key={comment.id}><b>{comment.profile?.display_name ?? comment.profile?.username ?? 'Film lover'}</b><span>{comment.body}</span></div>)}<form className="inline-comment-form" onSubmit={(event) => void addComment(post, event)}><input id={`comment-${post.id}`} name="comment" maxLength={2000} placeholder="Add a comment…" aria-label="Add a comment"/><button type="submit" aria-label="Send comment"><Send size={14}/></button></form></div></article>)}</div>
+      <div className="community-post-list">{posts.data?.map((post) => <article className="community-post" key={post.id}><button type="button" className="community-post-avatar" aria-label={`Open @${post.profile?.username ?? 'filmlover'} profile`} onClick={() => setSelectedProfile(post.author_id)}>{post.profile?.avatar_url ? <img src={post.profile.avatar_url} alt=""/> : (post.profile?.display_name ?? post.profile?.username ?? 'F').slice(0,1).toUpperCase()}</button><div className="community-post-body"><header><div><button className="profile-name-button" onClick={() => setSelectedProfile(post.author_id)}><b>{post.profile?.display_name ?? post.profile?.username ?? 'Film lover'}</b></button><span>@{post.profile?.username ?? 'filmlover'} · {new Date(post.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</span></div>{post.author_id !== userId && <button className="social-follow" type="button" aria-label={post.followed ? 'Unfollow person' : 'Follow person'} title={post.followed ? 'Unfollow' : 'Follow'} onClick={() => void toggleFollow(post)}>{post.followed ? 'Following' : 'Follow'}</button>}</header><span className="post-kind">{post.kind}</span>{post.body && <p>{post.body}</p>}{post.image_path && <img className="community-post-image" src={postImageUrl(post.image_path)} alt="Image shared in this post" loading="lazy"/>}<footer className="post-social-actions"><button type="button" className={post.liked ? 'is-liked' : ''} aria-label={post.liked ? 'Unlike post' : 'Like post'} onClick={() => void toggleLike(post)}><Heart size={16} fill={post.liked ? 'currentColor' : 'none'}/><span>{post.likes}</span></button><button type="button" aria-label="Show comments" onClick={() => document.getElementById(`comment-${post.id}`)?.focus()}><MessageCircle size={16}/><span>{post.comments.length}</span></button><button type="button" className={post.reposted ? 'is-reposted' : ''} aria-label={post.reposted ? 'Undo repost' : 'Repost'} onClick={() => void toggleRepost(post)}><Repeat2 size={16}/><span>{post.reposts}</span></button></footer>{post.comments.slice(-2).map((comment) => <div className="inline-comment" key={comment.id}><b>{comment.profile?.display_name ?? comment.profile?.username ?? 'Film lover'}</b><span>{comment.body}</span></div>)}<form className="inline-comment-form" onSubmit={(event) => void addComment(post, event)}><input id={`comment-${post.id}`} name="comment" maxLength={2000} placeholder="Add a comment…" aria-label="Add a comment"/><button type="submit" aria-label="Send comment"><Send size={14}/></button></form></div></article>)}</div>
     </div>}
     {space === 'News' && <section className="community-space-panel"><div className="space-heading"><Newspaper size={19}/><div><h2>New releases</h2><p>TMDB release dates · {releaseYear}</p></div></div>{news.isError && <ErrorPanel message={news.error.message} retry={() => void news.refetch()}/>}{news.isPending && <p className="community-state">Loading release news…</p>}<div className="space-movie-grid">{news.data?.results.map((movie) => <button type="button" className="space-movie-card" key={movie.id} onClick={() => onOpenMovie(movie)}><img src={movie.poster_path ? `https://image.tmdb.org/t/p/w342${movie.poster_path}` : ''} alt=""/><span><b>{movie.title}</b><small>{movie.release_date || 'Release date pending'}</small></span></button>)}</div>{!news.isPending && !news.isError && news.data?.results.length === 0 && <EmptySpace text="No released films found for this year yet."/>}</section>}
     {space === 'Trailers' && <section className="community-space-panel"><div className="space-heading"><Video size={19}/><div><h2>Trailers</h2><p>Official YouTube trailers for trending films</p></div></div>{trailers.isError && <ErrorPanel message={trailers.error.message} retry={() => void trailers.refetch()}/>}{trailers.isPending && <p className="community-state">Finding trailers…</p>}{!trailers.isPending && !trailers.isError && trailers.data?.length === 0 && <EmptySpace text="No official trailers were available from TMDB right now."/>}<div className="trailer-grid">{trailers.data?.map((trailer) => <a className="trailer-card" href={`https://www.youtube.com/watch?v=${encodeURIComponent(trailer.key)}`} target="_blank" rel="noreferrer" key={trailer.id}><div className="trailer-thumb">{trailer.poster_path && <img src={`https://image.tmdb.org/t/p/w500${trailer.poster_path}`} alt=""/>}<span><Video size={23}/></span></div><div><b>{trailer.title}</b><small>{trailer.name} · {trailer.release_date?.slice(0,4)}</small></div></a>)}</div></section>}
