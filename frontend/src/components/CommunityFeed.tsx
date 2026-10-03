@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Bookmark, CalendarDays, Clapperboard, Heart, MessageCircle, Newspaper, Repeat2, Send, Sparkles, Star, Users, Video } from 'lucide-react';
+import { Bookmark, Clapperboard, Heart, MessageCircle, Newspaper, Repeat2, Send, Sparkles, Star, Users, Video } from 'lucide-react';
 import { getMovieSchedule, getMovieTrailers } from '../services/movies';
 import type { Movie } from '../types/movie';
 import { supabase } from '../lib/supabase';
@@ -119,7 +119,7 @@ export default function CommunityFeed({ userId, onSignIn, onOpenMovie }: { userI
   const posts = useQuery({ queryKey: ['community-posts', space, userId], enabled: Boolean(supabase && (space === 'Feed' || space === 'Discussions')), queryFn: () => getPosts(space, userId) });
   const reviews = useQuery({ queryKey: ['community-reviews'], enabled: Boolean(supabase && space === 'Reviews'), queryFn: getReviews });
   const collections = useQuery({ queryKey: ['community-collections'], enabled: Boolean(supabase && space === 'Collections'), queryFn: getCollections });
-  const trailers = useQuery({ queryKey: ['community-trailers'], enabled: space === 'Trailers', queryFn: getMovieTrailers });
+  const trailers = useQuery({ queryKey: ['community-trailers'], enabled: space === 'Trailers', queryFn: ({ signal }) => getMovieTrailers(signal) });
   const releaseYear = new Date().getUTCFullYear();
   const news = useQuery({ queryKey: ['community-news', releaseYear], enabled: space === 'News', queryFn: ({ signal }) => getMovieSchedule('released', releaseYear, signal) });
 
