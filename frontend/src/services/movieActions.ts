@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase';
 
-const apiBase = import.meta.env.PROD ? '' : import.meta.env.VITE_API_URL ?? 'http://localhost:4000';
+const apiBase = import.meta.env.VITE_API_URL ?? (import.meta.env.PROD ? '' : 'http://localhost:4000');
 
 export type UserMovieState = { rating: number | null; watchlistStatus: 'want_to_watch' | 'watching' | 'watched' | 'dropped' | 'favorite' | null };
 
