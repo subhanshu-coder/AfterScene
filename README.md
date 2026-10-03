@@ -25,9 +25,9 @@ Without a TMDB key, the interface shows a setup prompt instead of fabricated mov
 
 ## Deploy to Vercel
 
-The repository supports the existing two-project Vercel setup (frontend root `frontend/`, Express backend root `backend/`). For the frontend project, set `VITE_API_URL` to the backend project's HTTPS production domain, with no trailing slash. Set `CLIENT_URL` in the backend project to the frontend site's origin. The backend exports its Express app for Vercel Functions; the top-level `vercel.json` and `api/[...path].ts` also support deploying both from the repository root as one project.
+Import the repository using Vercel Services. The root `vercel.json` defines a Vite frontend service (`frontend/`) and Express backend service (`backend/`), routes `/api/*` to the backend, and sends the remaining site traffic to the frontend. Frontend API calls stay same-origin. The Express app is exported for Vercel and retains `/health` and `/ready`.
 
-Set `TMDB_API_KEY`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` (or `SUPABASE_ANON_KEY`), and `SUPABASE_SERVICE_ROLE_KEY` as server-only backend variables. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` (or `VITE_SUPABASE_ANON_KEY`) for the frontend build. `VITE_API_URL` is a public API origin; never put the service-role key in a `VITE_*` variable. Apply the Supabase migrations separately before expecting related database features to work.
+Set `TMDB_API_KEY`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` (or `SUPABASE_ANON_KEY`), and `SUPABASE_SERVICE_ROLE_KEY` as backend-only variables. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` (or `VITE_SUPABASE_ANON_KEY`) for the frontend service. Never expose the service-role key using a `VITE_*` variable. Apply Supabase migrations before using the corresponding database features.
 
 ## API
 
