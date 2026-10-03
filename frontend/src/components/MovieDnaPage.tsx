@@ -5,7 +5,7 @@ import { Dna, Film, Globe2, Star, UserRound, CalendarRange } from 'lucide-react'
 import { supabase } from '../lib/supabase';
 
 type RawMovie = { id: string; title: string; genres: number[]; release_date: string | null; metadata: Record<string, unknown> | null };
-type TasteMovie = RawMovie & { weight: number; rating: number | null };
+type TasteMovie = Omit<RawMovie, 'metadata'> & { metadata: Record<string, unknown>; weight: number; rating: number | null };
 const genreNames: Record<number, string> = { 28: 'Action', 12: 'Adventure', 16: 'Animation', 35: 'Comedy', 80: 'Crime', 99: 'Documentary', 18: 'Drama', 10751: 'Family', 14: 'Fantasy', 36: 'History', 27: 'Horror', 10402: 'Music', 9648: 'Mystery', 10749: 'Romance', 878: 'Sci-fi', 10770: 'TV film', 53: 'Thriller', 10752: 'War', 37: 'Western' };
 
 async function getTasteData(userId: string) {
