@@ -1,13 +1,13 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bookmark, Clapperboard, Heart, ImagePlus, MessageCircle, Newspaper, Repeat2, Send, Sparkles, Star, Users, Video, X } from 'lucide-react';
-import { getMovieSchedule, getMovieTrailers } from '../services/movies';
+import { getAnime, getMovieSchedule, getMovieTrailers } from '../services/movies';
 import type { Movie } from '../types/movie';
 import { supabase } from '../lib/supabase';
 
 type Space = 'Feed' | 'News' | 'Discussions' | 'Trailers' | 'Reviews' | 'Collections';
 type Profile = { id: string; username: string; display_name: string; avatar_url?: string | null };
-type Comment = { id: string; author_id: string; body: string; created_at: string; profile?: Profile };
+type Comment = { id: string; post_id: string; author_id: string; body: string; parent_id: string | null; created_at: string; profile?: Profile; likes: number; liked: boolean };
 type Post = { id: string; author_id: string; kind: string; body: string | null; image_path: string | null; is_spoiler: boolean; created_at: string; profile?: Profile; liked: boolean; likes: number; reposted: boolean; reposts: number; followed: boolean; comments: Comment[] };
 
 type ReviewComment = { id: string; review_id: string; author_id: string; body: string; created_at: string; profile?: Profile };
@@ -51,13 +51,15 @@ async function getPosts(space: Space, userId: string | null): Promise<Post[]> {
     getProfiles(authorIds),
     supabase.from('post_reactions').select('post_id,user_id,reaction').in('post_id', ids),
     supabase.from('post_reposts').select('post_id,user_id').in('post_id', ids),
-    supabase.from('comments').select('id,post_id,author_id,body,created_at').in('post_id', ids).order('created_at', { ascending: true }),
+    supabase.from('comments').select('id,post_id,author_id,body,parent_id,created_at').in('post_id', ids).order('created_at', { ascending: true }),
     userId ? supabase.from('follows').select('followed_id').eq('follower_id', userId) : Promise.resolve({ data: [], error: null }),
   ]);
   if (reactionsResult.error) throw new Error(databaseMessage(reactionsResult.error));
   if (commentsResult.error) throw new Error(databaseMessage(commentsResult.error));
   const comments = commentsResult.data ?? [];
   const commentProfiles = await getProfiles(comments.map((comment) => comment.author_id));
+  const commentReactions = comments.length ? await supabase.from('comment_reactions').select('comment_id,user_id').in('comment_id', comments.map((comment) => comment.id)) : { data: [], error: null };
+  if (commentReactions.error) throw new Error(databaseMessage(commentReactions.error));
   const followedIds = new Set((followsResult.data ?? []).map((row) => row.followed_id));
   const reposters = repostsResult.error ? [] : repostsResult.data ?? [];
   return base.map((post) => {
@@ -71,7 +73,7 @@ async function getPosts(space: Space, userId: string | null): Promise<Post[]> {
       reposted: postReposts.some((row) => row.user_id === userId),
       reposts: postReposts.length,
       followed: followedIds.has(post.author_id),
-      comments: comments.filter((comment) => comment.post_id === post.id).map((comment) => ({ ...comment, profile: commentProfiles.get(comment.author_id) })),
+      comments: comments.filter((comment) => comment.post_id === post.id).map((comment) => { const likes = (commentReactions.data ?? []).filter((row) => row.comment_id === comment.id); return { ...comment, profile: commentProfiles.get(comment.author_id), likes: likes.length, liked: likes.some((row) => row.user_id === userId) }; }),
     };
   }) as Post[];
 }
@@ -134,7 +136,9 @@ export default function CommunityFeed({ userId, onSignIn, onOpenMovie }: { userI
   const collections = useQuery({ queryKey: ['community-collections'], enabled: Boolean(supabase && space === 'Collections'), queryFn: getCollections });
   const trailers = useQuery({ queryKey: ['community-trailers'], enabled: space === 'Trailers', queryFn: ({ signal }) => getMovieTrailers(signal) });
   const releaseYear = new Date().getUTCFullYear();
-  const news = useQuery({ queryKey: ['community-news', releaseYear], enabled: space === 'News', queryFn: ({ signal }) => getMovieSchedule('released', releaseYear, signal) });
+  const [newsLane, setNewsLane] = useState<'releases' | 'anime'>('releases');
+  const news = useQuery({ queryKey: ['community-news', releaseYear], enabled: space === 'News' && newsLane === 'releases', queryFn: ({ signal }) => getMovieSchedule('released', releaseYear, signal) });
+  const anime = useQuery({ queryKey: ['community-anime'], enabled: space === 'News' && newsLane === 'anime', queryFn: ({ signal }) => getAnime(signal) });
 
   useEffect(() => {
     if (!supabase || (space !== 'Feed' && space !== 'Discussions')) return;
@@ -209,6 +213,35 @@ export default function CommunityFeed({ userId, onSignIn, onOpenMovie }: { userI
     void client.invalidateQueries({ queryKey: ['community-posts'] });
   }
 
+  async function replyToComment(post: Post, parent: Comment, event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!userId || !supabase) return onSignIn();
+    const form = event.currentTarget;
+    const body = new FormData(form).get('reply')?.toString().trim();
+    if (!body) return;
+    const { error } = await supabase.from('comments').insert({ post_id: post.id, parent_id: parent.id, author_id: userId, body });
+    if (error) return setNotice(databaseMessage(error));
+    form.reset();
+    void client.invalidateQueries({ queryKey: ['community-posts'] });
+  }
+
+  async function deleteComment(comment: Comment) {
+    if (!supabase || comment.author_id !== userId) return;
+    const { error } = await supabase.from('comments').delete().eq('id', comment.id).eq('author_id', userId);
+    if (error) return setNotice(databaseMessage(error));
+    setNotice('Comment deleted.');
+    void client.invalidateQueries({ queryKey: ['community-posts'] });
+  }
+
+  async function toggleCommentLike(comment: Comment) {
+    if (!userId || !supabase) return onSignIn();
+    const result = comment.liked
+      ? await supabase.from('comment_reactions').delete().eq('comment_id', comment.id).eq('user_id', userId)
+      : await supabase.from('comment_reactions').insert({ comment_id: comment.id, user_id: userId, reaction: 'love' });
+    if (result.error) return setNotice(databaseMessage(result.error));
+    void client.invalidateQueries({ queryKey: ['community-posts'] });
+  }
+
   async function addReviewComment(review: Review, event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!userId || !supabase) return onSignIn();
@@ -231,8 +264,9 @@ export default function CommunityFeed({ userId, onSignIn, onOpenMovie }: { userI
       {posts.isError && <div className="community-error-panel"><b>Posts couldn’t load.</b><span>{posts.error.message}</span><button type="button" onClick={() => void posts.refetch()}>Retry</button></div>}
       {!posts.isPending && !posts.isError && posts.data?.length === 0 && <div className="community-empty"><MessageCircle size={25}/><b>{space === 'Discussions' ? 'No discussions yet.' : 'Your feed starts here.'}</b><span>Start a conversation about a film.</span></div>}
       <div className="community-post-list">{posts.data?.map((post) => <article className="community-post" key={post.id}><button type="button" className="community-post-avatar" aria-label={`Open @${post.profile?.username ?? 'filmlover'} profile`} onClick={() => setSelectedProfile(post.author_id)}>{post.profile?.avatar_url ? <img src={post.profile.avatar_url} alt=""/> : (post.profile?.display_name ?? post.profile?.username ?? 'F').slice(0,1).toUpperCase()}</button><div className="community-post-body"><header><div><button className="profile-name-button" onClick={() => setSelectedProfile(post.author_id)}><b>{post.profile?.display_name ?? post.profile?.username ?? 'Film lover'}</b></button><span>@{post.profile?.username ?? 'filmlover'} · {new Date(post.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</span></div>{post.author_id !== userId && <button className="social-follow" type="button" aria-label={post.followed ? 'Unfollow person' : 'Follow person'} title={post.followed ? 'Unfollow' : 'Follow'} onClick={() => void toggleFollow(post)}>{post.followed ? 'Following' : 'Follow'}</button>}</header><span className="post-kind">{post.kind}</span>{post.body && <p>{post.body}</p>}{post.image_path && <img className="community-post-image" src={postImageUrl(post.image_path)} alt="Image shared in this post" loading="lazy"/>}<footer className="post-social-actions"><button type="button" className={post.liked ? 'is-liked' : ''} aria-label={post.liked ? 'Unlike post' : 'Like post'} onClick={() => void toggleLike(post)}><Heart size={16} fill={post.liked ? 'currentColor' : 'none'}/><span>{post.likes}</span></button><button type="button" aria-label="Show comments" onClick={() => document.getElementById(`comment-${post.id}`)?.focus()}><MessageCircle size={16}/><span>{post.comments.length}</span></button><button type="button" className={post.reposted ? 'is-reposted' : ''} aria-label={post.reposted ? 'Undo repost' : 'Repost'} onClick={() => void toggleRepost(post)}><Repeat2 size={16}/><span>{post.reposts}</span></button></footer>{post.comments.slice(-2).map((comment) => <div className="inline-comment" key={comment.id}><b>{comment.profile?.display_name ?? comment.profile?.username ?? 'Film lover'}</b><span>{comment.body}</span></div>)}<form className="inline-comment-form" onSubmit={(event) => void addComment(post, event)}><input id={`comment-${post.id}`} name="comment" maxLength={2000} placeholder="Add a comment…" aria-label="Add a comment"/><button type="submit" aria-label="Send comment"><Send size={14}/></button></form></div></article>)}</div>
+      {posts.data?.some((post) => post.comments.length > 0) && <section className="community-comment-details" aria-label="Comment threads"><h2>Conversation details</h2>{posts.data.flatMap((post) => post.comments.filter((comment) => !comment.parent_id).map((comment) => <article key={comment.id}><div className="comment-author-line"><button className="profile-name-button" onClick={() => setSelectedProfile(comment.author_id)}>{comment.profile?.display_name ?? comment.profile?.username ?? 'Film lover'}</button><time dateTime={comment.created_at}>{new Date(comment.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</time>{comment.author_id === userId && <button className="comment-delete" onClick={() => void deleteComment(comment)}>Delete</button>}</div><p>{comment.body}</p><div className="comment-actions"><button type="button" aria-pressed={comment.liked} onClick={() => void toggleCommentLike(comment)}><Heart size={14} fill={comment.liked ? 'currentColor' : 'none'}/> {comment.likes}</button><button type="button" onClick={() => document.getElementById(`thread-reply-${comment.id}`)?.focus()}><MessageCircle size={14}/> Reply</button></div>{post.comments.filter((reply) => reply.parent_id === comment.id).map((reply) => <div className="thread-reply" key={reply.id}><div className="comment-author-line"><button className="profile-name-button" onClick={() => setSelectedProfile(reply.author_id)}>{reply.profile?.display_name ?? 'Film lover'}</button><time dateTime={reply.created_at}>{new Date(reply.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</time>{reply.author_id === userId && <button className="comment-delete" onClick={() => void deleteComment(reply)}>Delete</button>}</div><p>{reply.body}</p></div>)}<form className="social-reply-form" onSubmit={(event) => void replyToComment(post, comment, event)}><input id={`thread-reply-${comment.id}`} name="reply" maxLength={2000} placeholder="Reply to this comment…"/><button type="submit" aria-label="Reply"><Send size={14}/></button></form></article>)))}</section>}
     </div>}
-    {space === 'News' && <section className="community-space-panel"><div className="space-heading"><Newspaper size={19}/><div><h2>New releases</h2><p>TMDB release dates · {releaseYear}</p></div></div>{news.isError && <ErrorPanel message={news.error.message} retry={() => void news.refetch()}/>}{news.isPending && <p className="community-state">Loading release news…</p>}<div className="space-movie-grid">{news.data?.results.map((movie) => <button type="button" className="space-movie-card" key={movie.id} onClick={() => onOpenMovie(movie)}><img src={movie.poster_path ? `https://image.tmdb.org/t/p/w342${movie.poster_path}` : ''} alt=""/><span><b>{movie.title}</b><small>{movie.release_date || 'Release date pending'}</small></span></button>)}</div>{!news.isPending && !news.isError && news.data?.results.length === 0 && <EmptySpace text="No released films found for this year yet."/>}</section>}
+    {space === 'News' && <section className="community-space-panel"><div className="space-heading"><Newspaper size={19}/><div><h2>Movie & anime pulse</h2><p>TMDB releases and popular Japanese animation</p></div></div><div className="news-lanes"><button type="button" aria-pressed={newsLane === 'releases'} onClick={() => setNewsLane('releases')}>New releases</button><button type="button" aria-pressed={newsLane === 'anime'} onClick={() => setNewsLane('anime')}>Anime</button></div>{newsLane === 'releases' ? <>{news.isError && <ErrorPanel message={news.error.message} retry={() => void news.refetch()}/ >}{news.isPending && <p className="community-state">Loading releases…</p>}<div className="space-movie-grid">{news.data?.results.map((movie) => <button type="button" className="space-movie-card" key={movie.id} onClick={() => onOpenMovie(movie)}><img src={movie.poster_path ? `https://image.tmdb.org/t/p/w342${movie.poster_path}` : ''} alt=""/><span><b>{movie.title}</b><small>{movie.release_date || 'Release date pending'}</small></span></button>)}</div></> : <>{anime.isError && <ErrorPanel message={anime.error.message} retry={() => void anime.refetch()}/ >}{anime.isPending && <p className="community-state">Loading anime…</p>}<div className="space-movie-grid">{anime.data?.results.map((movie) => <button type="button" className="space-movie-card" key={movie.id} onClick={() => onOpenMovie(movie)}><img src={movie.poster_path ? `https://image.tmdb.org/t/p/w342${movie.poster_path}` : ''} alt=""/><span><b>{movie.title}</b><small>{movie.release_date || 'Release date pending'}</small></span></button>)}</div></>}</section>}
     {space === 'Trailers' && <section className="community-space-panel"><div className="space-heading"><Video size={19}/><div><h2>Trailers</h2><p>Official YouTube trailers for trending films</p></div></div>{trailers.isError && <ErrorPanel message={trailers.error.message} retry={() => void trailers.refetch()}/>}{trailers.isPending && <p className="community-state">Finding trailers…</p>}{!trailers.isPending && !trailers.isError && trailers.data?.length === 0 && <EmptySpace text="No official trailers were available from TMDB right now."/>}<div className="trailer-grid">{trailers.data?.map((trailer) => <a className="trailer-card" href={`https://www.youtube.com/watch?v=${encodeURIComponent(trailer.key)}`} target="_blank" rel="noreferrer" key={trailer.id}><div className="trailer-thumb">{trailer.poster_path && <img src={`https://image.tmdb.org/t/p/w500${trailer.poster_path}`} alt=""/>}<span><Video size={23}/></span></div><div><b>{trailer.title}</b><small>{trailer.name} · {trailer.release_date?.slice(0,4)}</small></div></a>)}</div></section>}
     {space === 'Reviews' && <section className="community-space-panel"><div className="space-heading"><Star size={19}/><div><h2>Reviews</h2><p>Recent reviews from the community</p></div></div>{reviews.isError && <ErrorPanel message={reviews.error.message} retry={() => void reviews.refetch()}/>}{reviews.isPending && <p className="community-state">Loading reviews…</p>}{reviews.data?.map((review) => <article className="review-card" key={review.id}><div className="review-card-meta"><button className="profile-name-button" onClick={() => setSelectedProfile(review.author_id)}><b>{review.profile?.display_name ?? review.profile?.username ?? 'Film lover'}</b></button><span>{review.movie?.title ?? 'Movie'} · ★ {review.rating.toFixed(1)}</span></div>{review.title && <h3>{review.title}</h3>}<p>{review.body}</p>{review.comments.map((comment) => <div className="inline-comment" key={comment.id}><b>{comment.profile?.display_name ?? comment.profile?.username ?? 'Film lover'}</b><span>{comment.body}</span></div>)}<form className="inline-comment-form" onSubmit={(event) => void addReviewComment(review, event)}><input id={`review-reply-${review.id}`} name="comment" maxLength={2000} placeholder="Reply to this review…" aria-label="Reply to review"/><button type="submit" aria-label="Send review reply"><Send size={14}/></button></form></article>)}{!reviews.isPending && !reviews.isError && reviews.data?.length === 0 && <EmptySpace text="No reviews yet. Be the first to review a movie."/>}</section>}
     {space === 'Collections' && <section className="community-space-panel"><div className="space-heading"><Bookmark size={19}/><div><h2>Collections</h2><p>Public movie lists made by film lovers</p></div></div>{collections.isError && <ErrorPanel message={collections.error.message} retry={() => void collections.refetch()}/>}{collections.isPending && <p className="community-state">Loading collections…</p>}{collections.data?.map((collection) => <article className="collection-card" key={collection.id}><div className="collection-card-icon"><Clapperboard size={19}/></div><div><h3>{collection.title}</h3><p>{collection.description || 'A community movie collection.'}</p><span>By {collection.profile?.display_name ?? collection.profile?.username ?? 'Film lover'} · {collection.items} films</span></div></article>)}{!collections.isPending && !collections.isError && collections.data?.length === 0 && <EmptySpace text="Public collections will show up here."/>}</section>}
