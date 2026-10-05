@@ -8,7 +8,7 @@ import LibraryPage from './components/LibraryPage';
 import MovieDnaPage from './components/MovieDnaPage';
 import SchedulePage from './components/SchedulePage';
 import MovieDetailDialog from './components/MovieDetailDialog';
-import { discoverMovies, searchMovies } from './services/movies';
+import { discoverMovies, getHotstarMovies, getMovieSchedule, searchMovies } from './services/movies';
 import { getMyWatchlist, saveWatchlist } from './services/movieActions';
 import { supabase } from './lib/supabase';
 import type { Movie } from './types/movie';
@@ -31,6 +31,9 @@ function App() {
   const trending = useQuery({ queryKey: ['movies', 'trending'], queryFn: ({ signal }) => discoverMovies(signal), enabled: Boolean(userId && !search.trim()) });
   const results = useQuery({ queryKey: ['movies', 'search', search], queryFn: ({ signal }) => searchMovies(search.trim(), signal), enabled: Boolean(userId && search.trim().length >= 2) });
   const watchlist = useQuery({ queryKey: ['my-watchlist', userId], queryFn: getMyWatchlist, enabled: Boolean(userId && activeNav === 'My watchlist'), retry: false });
+  const todayYear = new Date().getUTCFullYear();
+  const releasesToday = useQuery({ queryKey: ['movies', 'released-today', todayYear], queryFn: ({ signal }) => getMovieSchedule('today', todayYear, signal), enabled: Boolean(userId && activeNav === 'For you' && !search.trim()) });
+  const hotstarPicks = useQuery({ queryKey: ['movies', 'hotstar-IN'], queryFn: ({ signal }) => getHotstarMovies(signal), enabled: Boolean(userId && activeNav === 'For you' && !search.trim()) });
 
   useEffect(() => {
     if (!supabase) return;
@@ -120,6 +123,8 @@ function App() {
         </section>}
 
 
+
+        {!search.trim() && activeNav === 'For you' && <section className="home-recommendation-lanes" aria-label="What's new to watch"><article><div className="home-lane-heading"><div><span>RELEASE CALENDAR</span><h2>Arriving today</h2></div><button onClick={() => setActiveNav('Schedule')}>Full schedule <ArrowRight size={14}/></button></div>{releasesToday.isPending ? <p>Checking today's releases…</p> : releasesToday.isError ? <div className="home-lane-error">Today's releases couldn't load. <button onClick={() => void releasesToday.refetch()}>Retry</button></div> : releasesToday.data?.results.length ? <div className="home-lane-movies">{releasesToday.data.results.slice(0, 4).map((movie, index) => <MovieCard key={movie.id} movie={movie} index={index} onOpen={setSelectedMovie} onSave={addToWatchlist}/>)}</div> : <p>No releases are listed for today. Browse upcoming titles in Schedule.</p>}</article><article><div className="home-lane-heading"><div><span>INDIA · TMDB AVAILABILITY</span><h2>{hotstarPicks.data?.providerName ? `On ${hotstarPicks.data.providerName}` : 'Streaming picks'}</h2></div><Star size={18}/></div>{hotstarPicks.isPending ? <p>Checking current streaming availability…</p> : hotstarPicks.isError ? <div className="home-lane-error">Streaming picks couldn't load. <button onClick={() => void hotstarPicks.refetch()}>Retry</button></div> : hotstarPicks.data?.results.length ? <div className="home-lane-movies">{hotstarPicks.data.results.slice(0, 4).map((movie, index) => <MovieCard key={movie.id} movie={movie} index={index} onOpen={setSelectedMovie} onSave={addToWatchlist}/>)}</div> : <p>TMDB has no current Hotstar subscription listings for India.</p>}</article></section>}
 
         {activeNav !== 'Community' && activeNav !== 'Schedule' && activeNav !== 'Movie DNA' && activeNav !== 'My watchlist' && <footer className="page-footer"><span>AFTERSCENE <span className="brand-dot">®</span> — MADE FOR THE LOVE OF FILM</span><span>Films powered by TMDB <span className="footer-heart">♥</span></span></footer>}
       </div>
