@@ -15,6 +15,12 @@ async function getMovies(path: string, signal?: AbortSignal): Promise<MovieRespo
 export const discoverMovies = (signal?: AbortSignal) => getMovies('trending', signal);
 export const searchMovies = (query: string, signal?: AbortSignal) => getMovies(`search?q=${encodeURIComponent(query)}`, signal);
 export const getAnime = (signal?: AbortSignal) => getMovies('anime', signal);
+export const getHotstarMovies = async (signal?: AbortSignal): Promise<{ providerName: string | null; results: MovieResponse['results'] }> => {
+  const response = await fetch(`${apiBase}/api/movies/hotstar`, { signal });
+  const body = await response.json() as { providerName?: string | null; results?: MovieResponse['results']; error?: { message?: string } };
+  if (!response.ok) throw new Error(body.error?.message ?? 'Streaming picks could not be loaded.');
+  return { providerName: body.providerName ?? null, results: body.results ?? [] };
+};
 
 export type ScheduleBucket = 'released' | 'today' | 'upcoming' | 'announced';
 
