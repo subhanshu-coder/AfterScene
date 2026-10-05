@@ -76,3 +76,34 @@ export async function getMovies(kind: 'trending' | 'search', query?: string): Pr
   }
   return data;
 }
+
+
+export async function getPopularAnime(): Promise<TmdbResponse> {
+  if (!env.TMDB_API_KEY) throw Object.assign(new Error('Movie discovery is not configured yet. Add TMDB_API_KEY to the backend environment.'), { statusCode: 503 });
+  const cacheKey = 'anime:popular';
+  const cached = cache.get(cacheKey);
+  if (cached && cached.expires > Date.now()) return cached.data;
+  const url = new URL(`${env.TMDB_BASE_URL}/discover/tv`);
+  url.searchParams.set('api_key', env.TMDB_API_KEY);
+  url.searchParams.set('language', 'en-US');
+  url.searchParams.set('sort_by', 'popularity.desc');
+  url.searchParams.set('with_genres', '16');
+  url.searchParams.set('with_original_language', 'ja');
+  url.searchParams.set('include_null_first_air_dates', 'false');
+  let response: Response;
+  try { response = await fetch(url, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(8000) }); }
+  catch { throw Object.assign(new Error('Could not reach TMDB. Check the backend internet connection and try again.'), { statusCode: 502 }); }
+  if (!response.ok) throw Object.assign(new Error(response.status === 401 ? 'TMDB rejected the configured API key.' : 'Anime data is temporarily unavailable.'), { statusCode: response.status === 401 || response.status === 429 ? 503 : 502 });
+  const result = await response.json() as { results?: (Record<string, unknown> & { id: number; name?: string; first_air_date?: string })[]; page?: number; total_pages?: number; total_results?: number };
+  const data: TmdbResponse = {
+    results: (result.results ?? []).map((row) => ({
+      id: row.id, title: String(row.name ?? ''), overview: String(row.overview ?? ''),
+      poster_path: row.poster_path as string | null, backdrop_path: row.backdrop_path as string | null,
+      release_date: String(row.first_air_date ?? ''), vote_average: Number(row.vote_average ?? 0),
+      genre_ids: row.genre_ids as number[] ?? [],
+    })),
+    page: result.page ?? 1, total_pages: result.total_pages ?? 0, total_results: result.total_results ?? 0,
+  };
+  cache.set(cacheKey, { expires: Date.now() + ttlMs, data });
+  return data;
+}
