@@ -76,3 +76,72 @@ export async function getMovies(kind: 'trending' | 'search', query?: string): Pr
   }
   return data;
 }
+
+
+export async function getPopularAnime(): Promise<TmdbResponse> {
+  if (!env.TMDB_API_KEY) throw Object.assign(new Error('Movie discovery is not configured yet. Add TMDB_API_KEY to the backend environment.'), { statusCode: 503 });
+  const cacheKey = 'anime:popular';
+  const cached = cache.get(cacheKey);
+  if (cached && cached.expires > Date.now()) return cached.data;
+  const url = new URL(`${env.TMDB_BASE_URL}/discover/tv`);
+  url.searchParams.set('api_key', env.TMDB_API_KEY);
+  url.searchParams.set('language', 'en-US');
+  url.searchParams.set('sort_by', 'popularity.desc');
+  url.searchParams.set('with_genres', '16');
+  url.searchParams.set('with_original_language', 'ja');
+  url.searchParams.set('include_null_first_air_dates', 'false');
+  let response: Response;
+  try { response = await fetch(url, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(8000) }); }
+  catch { throw Object.assign(new Error('Could not reach TMDB. Check the backend internet connection and try again.'), { statusCode: 502 }); }
+  if (!response.ok) throw Object.assign(new Error(response.status === 401 ? 'TMDB rejected the configured API key.' : 'Anime data is temporarily unavailable.'), { statusCode: response.status === 401 || response.status === 429 ? 503 : 502 });
+  const result = await response.json() as { results?: (Record<string, unknown> & { id: number; name?: string; first_air_date?: string })[]; page?: number; total_pages?: number; total_results?: number };
+  const data: TmdbResponse = {
+    results: (result.results ?? []).map((row) => ({
+      id: row.id, title: String(row.name ?? ''), overview: String(row.overview ?? ''),
+      poster_path: row.poster_path as string | null, backdrop_path: row.backdrop_path as string | null,
+      release_date: String(row.first_air_date ?? ''), vote_average: Number(row.vote_average ?? 0),
+      genre_ids: row.genre_ids as number[] ?? [],
+    })),
+    page: result.page ?? 1, total_pages: result.total_pages ?? 0, total_results: result.total_results ?? 0,
+  };
+  cache.set(cacheKey, { expires: Date.now() + ttlMs, data });
+  return data;
+}
+
+
+export async function getHotstarMovies(): Promise<{ providerName: string | null; results: TmdbResult[] }> {
+  if (!env.TMDB_API_KEY) throw Object.assign(new Error('Movie discovery is not configured yet. Add TMDB_API_KEY to the backend environment.'), { statusCode: 503 });
+  const cacheKey = 'watch:hotstar:IN';
+  const cached = cache.get(cacheKey);
+  if (cached && cached.expires > Date.now()) return cached.data as TmdbResponse & { providerName: string | null };
+  const providersUrl = new URL(`${env.TMDB_BASE_URL}/watch/providers/movie`);
+  providersUrl.searchParams.set('api_key', env.TMDB_API_KEY);
+  providersUrl.searchParams.set('watch_region', 'IN');
+  let providerResponse: Response;
+  try { providerResponse = await fetch(providersUrl, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(8000) }); }
+  catch { throw Object.assign(new Error('Streaming availability could not be reached.'), { statusCode: 502 }); }
+  if (!providerResponse.ok) throw Object.assign(new Error('Streaming availability is temporarily unavailable.'), { statusCode: providerResponse.status === 401 || providerResponse.status === 429 ? 503 : 502 });
+  const providerBody = await providerResponse.json() as { results?: { provider_id: number; provider_name: string }[] };
+  const provider = providerBody.results?.find((item) => /hotstar/i.test(item.provider_name));
+  if (!provider) {
+    const empty = { providerName: null, results: [] };
+    cache.set(cacheKey, { expires: Date.now() + ttlMs, data: empty });
+    return empty;
+  }
+  const url = new URL(`${env.TMDB_BASE_URL}/discover/movie`);
+  url.searchParams.set('api_key', env.TMDB_API_KEY);
+  url.searchParams.set('language', 'en-US');
+  url.searchParams.set('watch_region', 'IN');
+  url.searchParams.set('with_watch_providers', String(provider.provider_id));
+  url.searchParams.set('with_watch_monetization_types', 'flatrate');
+  url.searchParams.set('sort_by', 'popularity.desc');
+  url.searchParams.set('include_adult', 'false');
+  let response: Response;
+  try { response = await fetch(url, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(8000) }); }
+  catch { throw Object.assign(new Error('Streaming recommendations could not be reached.'), { statusCode: 502 }); }
+  if (!response.ok) throw Object.assign(new Error('Streaming recommendations are temporarily unavailable.'), { statusCode: response.status === 401 || response.status === 429 ? 503 : 502 });
+  const result = await response.json() as TmdbResponse;
+  const data = { providerName: provider.provider_name, results: result.results ?? [] };
+  cache.set(cacheKey, { expires: Date.now() + ttlMs, data: data as TmdbResponse & { providerName: string | null } });
+  return data;
+}
