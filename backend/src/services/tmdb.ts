@@ -124,7 +124,7 @@ export async function getHotstarMovies(): Promise<{ providerName: string | null;
   const providerBody = await providerResponse.json() as { results?: { provider_id: number; provider_name: string }[] };
   const provider = providerBody.results?.find((item) => /hotstar/i.test(item.provider_name));
   if (!provider) {
-    const empty = { providerName: null, results: [] };
+    const empty = { providerName: null, results: [], page: 1, total_pages: 0, total_results: 0 };
     cache.set(cacheKey, { expires: Date.now() + ttlMs, data: empty });
     return empty;
   }
