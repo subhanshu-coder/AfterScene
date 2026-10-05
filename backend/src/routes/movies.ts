@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import { detail, search, trending } from '../controllers/movies.js';
+import { anime } from '../controllers/anime.js';
 import { schedule } from '../controllers/schedule.js';
 import { trailers } from '../controllers/trailers.js';
 import { getCommunityVerdict, getUserMovieState, listWatchlist, removeFromWatchlist, setCommunityVerdict, setRating, setWatchlistStatus } from '../controllers/userMovies.js';
@@ -12,6 +13,7 @@ const movieSearchLimit = rateLimit({ windowMs: 60_000, limit: 40, standardHeader
 router.get('/trending', trending);
 router.get('/schedule', schedule);
 router.get('/trailers', movieSearchLimit, trailers);
+router.get('/anime', movieSearchLimit, anime);
 router.get('/watchlist/me', requireUser, listWatchlist);
 router.get('/:tmdbId/community-score', getCommunityVerdict);
 router.put('/:tmdbId/verdict', requireUser, setCommunityVerdict);
