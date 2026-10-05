@@ -14,6 +14,7 @@ async function getMovies(path: string, signal?: AbortSignal): Promise<MovieRespo
 
 export const discoverMovies = (signal?: AbortSignal) => getMovies('trending', signal);
 export const searchMovies = (query: string, signal?: AbortSignal) => getMovies(`search?q=${encodeURIComponent(query)}`, signal);
+export const getAnime = (signal?: AbortSignal) => getMovies('anime', signal);
 
 export type ScheduleBucket = 'released' | 'today' | 'upcoming' | 'announced';
 
