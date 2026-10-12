@@ -2,6 +2,7 @@ import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import { detail, search, trending } from '../controllers/movies.js';
 import { anime } from '../controllers/anime.js';
+import { mood, streaming } from '../controllers/discovery.js';
 import { hotstar } from '../controllers/hotstar.js';
 import { schedule } from '../controllers/schedule.js';
 import { trailers } from '../controllers/trailers.js';
@@ -12,6 +13,8 @@ const router = Router();
 const movieSearchLimit = rateLimit({ windowMs: 60_000, limit: 40, standardHeaders: 'draft-7', legacyHeaders: false, message: { error: { code: 'RATE_LIMITED', message: 'Too many searches. Take a moment and try again.' } } });
 
 router.get('/trending', trending);
+router.get('/mood', movieSearchLimit, mood);
+router.get('/streaming', movieSearchLimit, streaming);
 router.get('/schedule', schedule);
 router.get('/trailers', movieSearchLimit, trailers);
 router.get('/anime', movieSearchLimit, anime);
