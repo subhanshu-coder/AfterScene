@@ -109,9 +109,9 @@ export async function getPopularAnime(): Promise<TmdbResponse> {
 }
 
 
-export async function getHotstarMovies(): Promise<{ providerName: string | null; results: TmdbResult[] }> {
+export async function getStreamingMovies(providerSearch: string): Promise<{ providerName: string | null; results: TmdbResult[] }> {
   if (!env.TMDB_API_KEY) throw Object.assign(new Error('Movie discovery is not configured yet. Add TMDB_API_KEY to the backend environment.'), { statusCode: 503 });
-  const cacheKey = 'watch:hotstar:IN';
+  const cacheKey = `watch:${providerSearch.toLowerCase()}:IN`;
   const cached = cache.get(cacheKey);
   if (cached && cached.expires > Date.now()) return cached.data as TmdbResponse & { providerName: string | null };
   const providersUrl = new URL(`${env.TMDB_BASE_URL}/watch/providers/movie`);
@@ -122,7 +122,7 @@ export async function getHotstarMovies(): Promise<{ providerName: string | null;
   catch { throw Object.assign(new Error('Streaming availability could not be reached.'), { statusCode: 502 }); }
   if (!providerResponse.ok) throw Object.assign(new Error('Streaming availability is temporarily unavailable.'), { statusCode: providerResponse.status === 401 || providerResponse.status === 429 ? 503 : 502 });
   const providerBody = await providerResponse.json() as { results?: { provider_id: number; provider_name: string }[] };
-  const provider = providerBody.results?.find((item) => /hotstar/i.test(item.provider_name));
+  const provider = providerBody.results?.find((item) => item.provider_name.toLowerCase().includes(providerSearch.toLowerCase()));
   if (!provider) {
     const empty = { providerName: null, results: [], page: 1, total_pages: 0, total_results: 0 };
     cache.set(cacheKey, { expires: Date.now() + ttlMs, data: empty });
@@ -144,4 +144,27 @@ export async function getHotstarMovies(): Promise<{ providerName: string | null;
   const data = { providerName: provider.provider_name, results: result.results ?? [] };
   cache.set(cacheKey, { expires: Date.now() + ttlMs, data: data as TmdbResponse & { providerName: string | null } });
   return data;
+}
+
+export const getHotstarMovies = () => getStreamingMovies('hotstar');
+
+export async function getMoodMovies(genreId: number): Promise<TmdbResponse> {
+  if (!env.TMDB_API_KEY) throw Object.assign(new Error('Movie discovery is not configured yet. Add TMDB_API_KEY to the backend environment.'), { statusCode: 503 });
+  if (!Number.isInteger(genreId) || genreId <= 0) throw Object.assign(new Error('Choose a valid movie mood.'), { statusCode: 400 });
+  const cacheKey = `mood:${genreId}`;
+  const cached = cache.get(cacheKey);
+  if (cached && cached.expires > Date.now()) return cached.data;
+  const url = new URL(`${env.TMDB_BASE_URL}/discover/movie`);
+  url.searchParams.set('api_key', env.TMDB_API_KEY);
+  url.searchParams.set('language', 'en-US');
+  url.searchParams.set('with_genres', String(genreId));
+  url.searchParams.set('sort_by', 'popularity.desc');
+  url.searchParams.set('include_adult', 'false');
+  let response: Response;
+  try { response = await fetch(url, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(8000) }); }
+  catch { throw Object.assign(new Error('Mood picks could not be reached.'), { statusCode: 502 }); }
+  if (!response.ok) throw Object.assign(new Error('Mood picks are temporarily unavailable.'), { statusCode: response.status === 401 || response.status === 429 ? 503 : 502 });
+  const result = await response.json() as TmdbResponse;
+  cache.set(cacheKey, { expires: Date.now() + ttlMs, data: result });
+  return result;
 }
