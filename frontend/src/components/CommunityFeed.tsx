@@ -270,7 +270,7 @@ export default function CommunityFeed({ userId, onSignIn, onOpenMovie }: { userI
     {space === 'Trailers' && <section className="community-space-panel"><div className="space-heading"><Video size={19}/><div><h2>Trailers</h2><p>Official YouTube trailers for trending films</p></div></div>{trailers.isError && <ErrorPanel message={trailers.error.message} retry={() => void trailers.refetch()}/>}{trailers.isPending && <p className="community-state">Finding trailers…</p>}{!trailers.isPending && !trailers.isError && trailers.data?.length === 0 && <EmptySpace text="No official trailers were available from TMDB right now."/>}<div className="trailer-grid">{trailers.data?.map((trailer) => <a className="trailer-card" href={`https://www.youtube.com/watch?v=${encodeURIComponent(trailer.key)}`} target="_blank" rel="noreferrer" key={trailer.id}><div className="trailer-thumb">{trailer.poster_path && <img src={`https://image.tmdb.org/t/p/w500${trailer.poster_path}`} alt=""/>}<span><Video size={23}/></span></div><div><b>{trailer.title}</b><small>{trailer.name} · {trailer.release_date?.slice(0,4)}</small></div></a>)}</div></section>}
     {space === 'Reviews' && <section className="community-space-panel"><div className="space-heading"><Star size={19}/><div><h2>Reviews</h2><p>Recent reviews from the community</p></div></div>{reviews.isError && <ErrorPanel message={reviews.error.message} retry={() => void reviews.refetch()}/>}{reviews.isPending && <p className="community-state">Loading reviews…</p>}{reviews.data?.map((review) => <article className="review-card" key={review.id}><div className="review-card-meta"><button className="profile-name-button" onClick={() => setSelectedProfile(review.author_id)}><b>{review.profile?.display_name ?? review.profile?.username ?? 'Film lover'}</b></button><span>{review.movie?.title ?? 'Movie'} · ★ {review.rating.toFixed(1)}</span></div>{review.title && <h3>{review.title}</h3>}<p>{review.body}</p>{review.comments.map((comment) => <div className="inline-comment" key={comment.id}><b>{comment.profile?.display_name ?? comment.profile?.username ?? 'Film lover'}</b><span>{comment.body}</span></div>)}<form className="inline-comment-form" onSubmit={(event) => void addReviewComment(review, event)}><input id={`review-reply-${review.id}`} name="comment" maxLength={2000} placeholder="Reply to this review…" aria-label="Reply to review"/><button type="submit" aria-label="Send review reply"><Send size={14}/></button></form></article>)}{!reviews.isPending && !reviews.isError && reviews.data?.length === 0 && <EmptySpace text="No reviews yet. Be the first to review a movie."/>}</section>}
     {space === 'Collections' && <section className="community-space-panel"><div className="space-heading"><Bookmark size={19}/><div><h2>Collections</h2><p>Public movie lists made by film lovers</p></div></div>{collections.isError && <ErrorPanel message={collections.error.message} retry={() => void collections.refetch()}/>}{collections.isPending && <p className="community-state">Loading collections…</p>}{collections.data?.map((collection) => <article className="collection-card" key={collection.id}><div className="collection-card-icon"><Clapperboard size={19}/></div><div><h3>{collection.title}</h3><p>{collection.description || 'A community movie collection.'}</p><span>By {collection.profile?.display_name ?? collection.profile?.username ?? 'Film lover'} · {collection.items} films</span></div></article>)}{!collections.isPending && !collections.isError && collections.data?.length === 0 && <EmptySpace text="Public collections will show up here."/>}</section>}
-  </section>{selectedProfile && <ProfileDialog profileId={selectedProfile} userId={userId} onClose={() => setSelectedProfile(null)} onSignIn={onSignIn}/>}</>;
+  </section>{selectedProfile && <ProfileDialog profileId={selectedProfile} userId={userId} onClose={() => setSelectedProfile(null)} onSignIn={onSignIn} onOpenProfile={setSelectedProfile}/>}</>;
 }
 
 function ErrorPanel({ message, retry }: { message: string; retry: () => void }) {
@@ -281,21 +281,35 @@ function EmptySpace({ text }: { text: string }) {
   return <div className="community-empty"><Sparkles size={23}/><b>{text}</b></div>;
 }
 
-function ProfileDialog({ profileId, userId, onClose, onSignIn }: { profileId: string; userId: string | null; onClose: () => void; onSignIn: () => void }) {
+export function ProfileDialog({ profileId, userId, onClose, onSignIn, onOpenProfile, onSignOut }: { profileId: string; userId: string | null; onClose: () => void; onSignIn: () => void; onOpenProfile: (id: string) => void; onSignOut?: () => void }) {
   const client = useQueryClient();
+  const [tab, setTab] = useState<'Posts' | 'Reviews' | 'Followers' | 'Following'>('Posts');
+  const [uploading, setUploading] = useState(false);
+  const [notice, setNotice] = useState('');
   const query = useQuery({ queryKey: ['public-profile', profileId, userId], queryFn: async () => {
     if (!supabase) throw new Error('Supabase is not configured.');
-    const [person, posts, followers, following, ownFollow] = await Promise.all([
+    const [person, posts, reviews, followers, following, followerCount, followingCount, ownFollow] = await Promise.all([
       supabase.from('profiles').select('id,username,display_name,bio,avatar_url').eq('id', profileId).single(),
-      supabase.from('posts').select('id,kind,body,is_spoiler,created_at').eq('author_id', profileId).order('created_at', { ascending: false }).limit(30),
-      supabase.from('follows').select('follower_id', { count: 'exact', head: true }).eq('followed_id', profileId),
-      supabase.from('follows').select('followed_id', { count: 'exact', head: true }).eq('follower_id', profileId),
+      supabase.from('posts').select('id,kind,body,image_path,is_spoiler,created_at').eq('author_id', profileId).order('created_at', { ascending: false }).limit(30),
+      supabase.from('reviews').select('id,title,body,rating,created_at,movie_id').eq('author_id', profileId).order('created_at', { ascending: false }).limit(30),
+      supabase.from('follows').select('follower_id').eq('followed_id', profileId).limit(100),
+      supabase.from('follows').select('followed_id').eq('follower_id', profileId).limit(100),
+      supabase.from('follows').select('*', { count: 'exact', head: true }).eq('followed_id', profileId),
+      supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', profileId),
       userId && userId !== profileId ? supabase.from('follows').select('followed_id').eq('follower_id', userId).eq('followed_id', profileId).maybeSingle() : Promise.resolve({ data: null, error: null }),
     ]);
-    const error = person.error || posts.error || followers.error || following.error || ownFollow.error;
+    const error = person.error || posts.error || reviews.error || followers.error || following.error || followerCount.error || followingCount.error || ownFollow.error;
     if (error) throw new Error(databaseMessage(error));
     if (!person.data) throw new Error('This profile is private or unavailable.');
-    return { person: person.data, posts: posts.data ?? [], followers: followers.count ?? 0, following: following.count ?? 0, isFollowing: Boolean(ownFollow.data) };
+    const edgeIds = [...new Set([...(followers.data ?? []).map((edge) => edge.follower_id), ...(following.data ?? []).map((edge) => edge.followed_id)])];
+    const people = edgeIds.length ? await supabase.from('profiles').select('id,username,display_name,avatar_url').in('id', edgeIds) : { data: [], error: null };
+    if (people.error) throw new Error(databaseMessage(people.error));
+    const profiles = new Map((people.data ?? []).map((item) => [item.id, item]));
+    const movieIds = [...new Set((reviews.data ?? []).map((review) => review.movie_id))];
+    const movies = movieIds.length ? await supabase.from('movies').select('id,title').in('id', movieIds) : { data: [], error: null };
+    if (movies.error) throw new Error(databaseMessage(movies.error));
+    const titles = new Map((movies.data ?? []).map((movie) => [movie.id, movie.title]));
+    return { person: person.data, posts: posts.data ?? [], reviews: (reviews.data ?? []).map((review) => ({ ...review, movieTitle: titles.get(review.movie_id) ?? 'Movie' })), followers: (followers.data ?? []).map((edge) => profiles.get(edge.follower_id)).filter(Boolean) as Profile[], following: (following.data ?? []).map((edge) => profiles.get(edge.followed_id)).filter(Boolean) as Profile[], followersCount: followerCount.count ?? 0, followingCount: followingCount.count ?? 0, isFollowing: Boolean(ownFollow.data) };
   } });
   async function toggleFollow() {
     if (!userId || !supabase) return onSignIn();
@@ -303,8 +317,24 @@ function ProfileDialog({ profileId, userId, onClose, onSignIn }: { profileId: st
     const result = query.data.isFollowing
       ? await supabase.from('follows').delete().eq('follower_id', userId).eq('followed_id', profileId)
       : await supabase.from('follows').insert({ follower_id: userId, followed_id: profileId });
-    if (result.error) return;
+    if (result.error) return setNotice(databaseMessage(result.error));
     void client.invalidateQueries({ queryKey: ['public-profile', profileId] });
   }
-  return <div className="profile-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="profile-dialog" role="dialog" aria-modal="true" aria-label="Member profile"><button className="profile-close" aria-label="Close profile" onClick={onClose}>×</button>{query.isPending && <p>Loading profile…</p>}{query.isError && <p>{query.error.message}</p>}{query.data && <><header><div className="profile-avatar">{query.data.person.avatar_url ? <img src={query.data.person.avatar_url} alt=""/> : query.data.person.display_name.slice(0, 1).toUpperCase()}</div><div><h2>{query.data.person.display_name}</h2><span>@{query.data.person.username}</span><p>{query.data.person.bio || 'Movie lover, collecting stories.'}</p></div>{userId !== profileId && <button className="social-follow" onClick={() => void toggleFollow()}>{query.data.isFollowing ? 'Following' : 'Follow'}</button>}</header><div className="profile-counts"><span><b>{query.data.posts.length}</b> posts</span><span><b>{query.data.followers}</b> followers</span><span><b>{query.data.following}</b> following</span></div><h3>Posts</h3>{query.data.posts.map((post) => <article className="profile-post" key={post.id}><small>{post.kind} · {new Date(post.created_at).toLocaleDateString()}</small><p>{post.is_spoiler ? 'Spoiler-protected post' : post.body}</p></article>)}{!query.data.posts.length && <p>No public posts yet.</p>}</>}</section></div>;
+  async function uploadAvatar(file?: File) {
+    if (!file || !userId || userId !== profileId || !supabase) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
+      setNotice('Choose a JPG, PNG, or WebP image up to 5 MB.'); return;
+    }
+    setUploading(true); setNotice('');
+    const path = userId + '/' + crypto.randomUUID() + '.' + (file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg');
+    const { error: uploadError } = await supabase.storage.from('profile-avatars').upload(path, file, { contentType: file.type, upsert: false });
+    if (uploadError) { setUploading(false); setNotice(databaseMessage(uploadError)); return; }
+    const avatarUrl = supabase.storage.from('profile-avatars').getPublicUrl(path).data.publicUrl;
+    const { error } = await supabase.from('profiles').update({ avatar_url: avatarUrl }).eq('id', userId);
+    if (error) { await supabase.storage.from('profile-avatars').remove([path]); setNotice(databaseMessage(error)); }
+    else { setNotice('Profile photo updated.'); void client.invalidateQueries({ queryKey: ['public-profile'] }); }
+    setUploading(false);
+  }
+  const people = tab === 'Followers' ? query.data?.followers : query.data?.following;
+  return <div className="profile-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="profile-dialog" role="dialog" aria-modal="true" aria-label="Member profile"><button className="profile-close" aria-label="Close profile" onClick={onClose}>×</button>{query.isPending && <p>Loading profile…</p>}{query.isError && <p>{query.error.message}</p>}{query.data && <><header><div className="profile-avatar">{query.data.person.avatar_url ? <img src={query.data.person.avatar_url} alt="Profile"/> : query.data.person.display_name.slice(0, 1).toUpperCase()}</div><div><h2>{query.data.person.display_name}</h2><span>@{query.data.person.username}</span><p>{query.data.person.bio || 'Movie lover, collecting stories.'}</p></div>{userId !== profileId ? <button className="social-follow" onClick={() => void toggleFollow()}>{query.data.isFollowing ? 'Following' : 'Follow'}</button> : <label className="avatar-upload">{uploading ? 'Uploading…' : 'Edit photo'}<input type="file" accept="image/jpeg,image/png,image/webp" disabled={uploading} onChange={(event) => { void uploadAvatar(event.target.files?.[0]); event.target.value = ''; }}/></label>}</header>{notice && <p className="profile-notice" role="status">{notice}</p>}<div className="profile-counts"><button onClick={() => setTab('Posts')}><b>{query.data.posts.length}</b> posts</button><button onClick={() => setTab('Followers')}><b>{query.data.followersCount}</b> followers</button><button onClick={() => setTab('Following')}><b>{query.data.followingCount}</b> following</button><button onClick={() => setTab('Reviews')}><b>{query.data.reviews.length}</b> reviews</button></div><nav className="profile-tabs" aria-label="Profile sections">{(['Posts', 'Reviews', 'Followers', 'Following'] as const).map((name) => <button key={name} aria-pressed={tab === name} onClick={() => setTab(name)}>{name}</button>)}</nav>{tab === 'Posts' && <>{query.data.posts.map((post) => <article className="profile-post" key={post.id}><small>{post.kind} · {new Date(post.created_at).toLocaleDateString()}</small><p>{post.is_spoiler ? 'Spoiler-protected post' : post.body || 'Shared a photo'}</p>{post.image_path && supabase && <img className="profile-post-image" src={supabase.storage.from('post-images').getPublicUrl(post.image_path).data.publicUrl} alt="Post attachment"/>}</article>)}{!query.data.posts.length && <p>No public posts yet.</p>}</>}{tab === 'Reviews' && <>{query.data.reviews.map((review) => <article className="profile-post" key={review.id}><small>{review.movieTitle} · ★ {Number(review.rating).toFixed(1)} · {new Date(review.created_at).toLocaleDateString()}</small>{review.title && <b>{review.title}</b>}<p>{review.body}</p></article>)}{!query.data.reviews.length && <p>No reviews yet.</p>}</>}{(tab === 'Followers' || tab === 'Following') && <div className="profile-people-list">{(people ?? []).map((person) => <button key={person.id} onClick={() => onOpenProfile(person.id)}><span className="profile-avatar small">{person.avatar_url ? <img src={person.avatar_url} alt=""/> : person.display_name.slice(0, 1).toUpperCase()}</span><span><b>{person.display_name}</b><small>@{person.username}</small></span></button>)}{!people?.length && <p>No {tab.toLowerCase()} to show yet.</p>}</div>}{onSignOut && <button className="profile-signout" onClick={onSignOut}>Sign out</button>}</>}</section></div>;
 }
