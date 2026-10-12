@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { ArrowRight, Bell, Bookmark, CalendarDays, ChevronDown, CircleHelp, Clapperboard, Dna, Film, Flame, Heart, Home, Layers3, Menu, Moon, Plus, Search, Settings2, Sparkles, Star, Sun, Users, X } from 'lucide-react';
+import { ArrowRight, Bell, Bookmark, CalendarDays, ChevronDown, CircleHelp, Dna, Film, Flame, Heart, Home, Layers3, Menu, Moon, Plus, Search, Settings2, Sparkles, Star, Sun, Users, X } from 'lucide-react';
 import AuthDialog from './components/AuthDialog';
 import CommunityFeed, { ProfileDialog } from './components/CommunityFeed';
 import LibraryPage from './components/LibraryPage';
