@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Bookmark, Clapperboard, Heart, ImagePlus, MessageCircle, Newspaper, Repeat2, Send, Sparkles, Star, Users, Video, X } from 'lucide-react';
+import { Bookmark, Clapperboard, Flame, Heart, ImagePlus, MessageCircle, Newspaper, Repeat2, Send, Sparkles, Star, Users, Video, X } from 'lucide-react';
 import { getAnime, getMovieSchedule, getMovieTrailers } from '../services/movies';
 import type { Movie } from '../types/movie';
 import { supabase } from '../lib/supabase';
