@@ -58,7 +58,7 @@ export default function AuthDialog({ mode, onClose, onSuccess, onModeChange, req
     {required && <aside className="auth-gate-visual" aria-label="Afterscene"><div className="auth-gate-wordmark"><span className="brand-mark"><img src="/afterscene-mark.svg" alt="" /></span>afterscene<span className="brand-dot">.</span></div><div className="auth-film-art" aria-hidden="true"><span className="film-orbit film-orbit-one"/><span className="film-orbit film-orbit-two"/><span className="film-glow"/><span className="film-caption">AFTER THE CREDITS</span><span className="film-title">Your films.<br/>Your people.</span></div><span className="auth-gate-footer">A quieter corner for people who love movies.</span></aside>}
     <section className={`auth-dialog ${required ? 'auth-dialog-gate' : ''}`} role="dialog" aria-modal="true" aria-labelledby="auth-title">
       {!required && <button className="auth-close" onClick={onClose} aria-label="Close dialog"><X size={18}/></button>}
-      <div className="auth-brand"><span className="brand-mark"><Clapperboard size={18}/></span><span>afterscene<span className="brand-dot">.</span></span></div>
+      <div className="auth-brand"><span className="brand-mark"><img src="/afterscene-mark.svg" alt="" /></span><span>afterscene<span className="brand-dot">.</span></span></div>
       <span className="auth-eyebrow">{mode === 'signup' ? 'JOIN AFTERSCENE' : 'YOUR MOVIE SPACE'}</span>
       <h2 id="auth-title">{mode === 'signup' ? 'Create your account' : 'Welcome back'}</h2>
       <p className="auth-subtitle">{mode === 'signup' ? 'Save films, share your take, find your people.' : 'Sign in to continue.'}</p>
