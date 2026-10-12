@@ -32,8 +32,8 @@ export const getMoodMovies = async (genreId: number, signal?: AbortSignal): Prom
 
 export type ScheduleBucket = 'released' | 'today' | 'upcoming' | 'announced';
 
-export const getMovieSchedule = async (bucket: ScheduleBucket, year: number, signal?: AbortSignal): Promise<MovieResponse> => {
-  const response = await fetch(`${apiBase}/api/movies/schedule?bucket=${bucket}&year=${year}`, { signal });
+export const getMovieSchedule = async (bucket: ScheduleBucket, year: number, signal?: AbortSignal, page = 1): Promise<MovieResponse> => {
+  const response = await fetch(`${apiBase}/api/movies/schedule?bucket=${bucket}&year=${year}&page=${page}`, { signal });
   if (!response.ok) {
     const body = await response.json().catch(() => null) as { error?: { message?: string } } | null;
     throw new Error(body?.error?.message ?? 'The release schedule could not be loaded.');
