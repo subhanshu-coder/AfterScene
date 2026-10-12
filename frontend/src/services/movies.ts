@@ -15,11 +15,19 @@ async function getMovies(path: string, signal?: AbortSignal): Promise<MovieRespo
 export const discoverMovies = (signal?: AbortSignal) => getMovies('trending', signal);
 export const searchMovies = (query: string, signal?: AbortSignal) => getMovies(`search?q=${encodeURIComponent(query)}`, signal);
 export const getAnime = (signal?: AbortSignal) => getMovies('anime', signal);
-export const getHotstarMovies = async (signal?: AbortSignal): Promise<{ providerName: string | null; results: MovieResponse['results'] }> => {
-  const response = await fetch(`${apiBase}/api/movies/hotstar`, { signal });
+export const getStreamingMovies = async (provider: string, signal?: AbortSignal): Promise<{ providerName: string | null; results: MovieResponse['results'] }> => {
+  const response = await fetch(`${apiBase}/api/movies/streaming?provider=${encodeURIComponent(provider)}`, { signal });
   const body = await response.json() as { providerName?: string | null; results?: MovieResponse['results']; error?: { message?: string } };
   if (!response.ok) throw new Error(body.error?.message ?? 'Streaming picks could not be loaded.');
   return { providerName: body.providerName ?? null, results: body.results ?? [] };
+};
+
+export const getHotstarMovies = (signal?: AbortSignal) => getStreamingMovies('Hotstar', signal);
+export const getMoodMovies = async (genreId: number, signal?: AbortSignal): Promise<MovieResponse> => {
+  const response = await fetch(`${apiBase}/api/movies/mood?genre=${genreId}`, { signal });
+  const body = await response.json() as MovieResponse & { error?: { message?: string } };
+  if (!response.ok) throw new Error(body.error?.message ?? 'Mood picks could not be loaded.');
+  return body;
 };
 
 export type ScheduleBucket = 'released' | 'today' | 'upcoming' | 'announced';
