@@ -9,7 +9,7 @@ const cacheTtl = 10 * 60_000;
 const dateString = (date: Date) => date.toISOString().slice(0, 10);
 const addDays = (date: Date, days: number) => new Date(date.getTime() + days * 86_400_000);
 
-export async function getMovieSchedule(bucket: ScheduleBucket, year: number): Promise<ScheduleResponse> {
+export async function getMovieSchedule(bucket: ScheduleBucket, year: number, page = 1): Promise<ScheduleResponse> {
   if (!env.TMDB_API_KEY) throw Object.assign(new Error('Movie schedule is not configured. Add TMDB_API_KEY to the backend environment.'), { statusCode: 503 });
   const today = new Date();
   const now = dateString(today);
@@ -36,18 +36,18 @@ export async function getMovieSchedule(bucket: ScheduleBucket, year: number): Pr
   }
 
   if (from > to) return { results: [], page: 1, total_pages: 0, total_results: 0 };
-  const cacheKey = `${bucket}:${year}:${from}:${to}`;
+  const cacheKey = `${bucket}:${year}:${from}:${to}:${page}`;
   const cached = cache.get(cacheKey);
   if (cached && cached.expires > Date.now()) return cached.response;
 
   const url = new URL(`${env.TMDB_BASE_URL}/discover/movie`);
   url.searchParams.set('api_key', env.TMDB_API_KEY);
   url.searchParams.set('language', 'en-US');
-  url.searchParams.set('region', 'US');
+  url.searchParams.set('region', 'IN');
   url.searchParams.set('primary_release_date.gte', from);
   url.searchParams.set('primary_release_date.lte', to);
   url.searchParams.set('sort_by', bucket === 'released' ? 'popularity.desc' : 'primary_release_date.asc');
-  url.searchParams.set('page', '1');
+  url.searchParams.set('page', String(page));
 
   let response: Response;
   try {
