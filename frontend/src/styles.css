@@ -119,8 +119,8 @@ html[data-theme=light] input,html[data-theme=light] textarea{color:var(--text)}
 @media(max-width:760px){.app-shell{grid-template-columns:minmax(0,1fr)}.sidebar{width:min(290px,86vw)}.home-lane-movies{grid-template-columns:repeat(2,minmax(0,1fr))}.mood-options{margin-left:0}.profile-counts{gap:12px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 
-:root{--lime:#f4f4f1}
-html[data-theme=light]{--lime:#171717}
+:root{--lime:#d4f36a}
+html[data-theme=light]{--lime:#54761f}
 .brand-mark{background:#fff!important;color:#111!important;border-radius:10px}
 .brand-mark img{width:26px;height:26px;object-fit:contain}
 .app-shell{grid-template-columns:78px minmax(0,1fr);max-width:1680px}
