@@ -46,7 +46,8 @@ export async function getMovieSchedule(bucket: ScheduleBucket, year: number, pag
   url.searchParams.set('region', 'IN');
   url.searchParams.set('primary_release_date.gte', from);
   url.searchParams.set('primary_release_date.lte', to);
-  url.searchParams.set('sort_by', bucket === 'released' ? 'popularity.desc' : 'primary_release_date.asc');
+  url.searchParams.set('sort_by', 'popularity.desc');
+  url.searchParams.set('vote_count.gte', '10');
   url.searchParams.set('page', String(page));
 
   let response: Response;
