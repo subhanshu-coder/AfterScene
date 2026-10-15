@@ -225,3 +225,10 @@ html[data-theme=light]{--lime:#54761f}
 .schedule-pagination span{color:var(--muted);font-size:13px}
 @media(max-width:760px){.app-shell{grid-template-columns:minmax(0,1fr)}.sidebar{width:min(88px,86vw);padding:14px 6px}.topbar{padding:0 14px}.content-wrap{padding:0 14px}.community-page{padding-top:14px}.community-page-heading h1{font-size:32px}.community-spaces{width:100%}.community-spaces button{padding:0 10px}.profile-page-card{padding:20px 16px}.movie-detail-page .movie-dialog-backdrop-image{height:300px}.movie-detail-page .movie-dialog-main{padding:125px 18px 22px;gap:15px;align-items:flex-end}.movie-detail-page .movie-dialog-poster{width:120px}.movie-detail-page .movie-dialog-copy h2{font-size:30px}.movie-detail-page .movie-overview{font-size:14px}.movie-detail-page .movie-actions{flex-wrap:wrap}.movie-detail-page .movie-dialog-cast,.movie-detail-page .movie-detail-reviews{padding-left:16px;padding-right:16px}.movie-review>header{flex-wrap:wrap}.movie-review time{margin-left:0}.movie-review-reply{flex-wrap:wrap}.movie-review-reply time{margin-left:0}}
 @media(prefers-reduced-motion:reduce){.movie-detail-page *{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+.schedule-media-tabs{display:flex;gap:8px;margin:8px 0 12px}
+.schedule-media-tabs button{padding:10px 16px;border:1px solid var(--line);border-radius:9px;background:var(--panel);color:var(--muted);font-size:14px}
+.schedule-media-tabs button[aria-selected=true]{border-color:var(--lime);background:color-mix(in srgb,var(--lime) 12%,var(--panel));color:var(--lime);font-weight:700}
+.schedule-movie{color:var(--text);text-decoration:none}
+.space-movie-card .space-movie-poster{width:74px;height:104px;flex:none;display:grid;place-items:center;overflow:hidden;background:var(--panel-light);border-radius:8px}
+.space-movie-card .space-movie-poster img{width:100%;height:100%;object-fit:cover}
