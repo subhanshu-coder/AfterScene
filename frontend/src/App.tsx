@@ -2,9 +2,14 @@ import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { ArrowRight, Bell, Bookmark, CalendarDays, ChevronDown, CircleHelp, Dna, Film, Flame, Heart, Home, Layers3, Menu, Moon, Plus, Search, Settings2, Sparkles, Star, Sun, Users, X } from 'lucide-react';
+import { ArrowRight, Bookmark, CalendarDays, ChevronDown, CircleHelp, Compass, Dna, Film, Flame, Home, Layers3, Menu, Moon, Plus, Search, Settings2, Sparkles, Star, Sun, Users, X } from 'lucide-react';
 import AuthDialog from './components/AuthDialog';
-import CommunityFeed, { ProfileDialog } from './components/CommunityFeed';
+import CommunityFeed from './components/CommunityFeed';
+import DiscoverPage from './components/DiscoverPage';
+import LandingPage from './components/LandingPage';
+import NotificationCenter, { NotificationsPage } from './components/NotificationCenter';
+import ProfilePage from './components/ProfilePage';
+import { avatarUrl } from './lib/avatar';
 import LibraryPage from './components/LibraryPage';
 import MovieDnaPage from './components/MovieDnaPage';
 import SchedulePage from './components/SchedulePage';
@@ -22,6 +27,7 @@ function App() {
   const [search, setSearch] = useState('');
   const [activeNav, setActiveNav] = useState('For you');
   const [mobileNav, setMobileNav] = useState(false);
+  useEffect(() => { document.body.classList.toggle('nav-locked', mobileNav); return () => document.body.classList.remove('nav-locked'); }, [mobileNav]);
   const [lightMode, setLightMode] = useState(() => window.localStorage.getItem('afterscene-theme') === 'light');
   useEffect(() => { document.documentElement.dataset.theme = lightMode ? 'light' : 'dark'; window.localStorage.setItem('afterscene-theme', lightMode ? 'light' : 'dark'); }, [lightMode]);
   const [toast, setToast] = useState('');
@@ -61,10 +67,10 @@ function App() {
 
   const movies = (search.trim() ? results.data?.results : trending.data?.results) ?? [];
   const navItems = [
-    { label: 'For you', icon: Home }, { label: 'Community', icon: Users }, { label: 'Schedule', icon: CalendarDays },
+    { label: 'For you', icon: Home }, { label: 'Discover', icon: Compass }, { label: 'Community', icon: Users }, { label: 'Schedule', icon: CalendarDays },
   ];
   const libraryItems = [
-    { label: 'My watchlist', icon: Bookmark }, { label: 'Movie diary', icon: Layers3 }, { label: 'Movie DNA', icon: Dna }, { label: 'Your people', icon: Heart }, { label: 'My profile', icon: Users },
+    { label: 'My watchlist', icon: Bookmark }, { label: 'Movie diary', icon: Layers3 }, { label: 'Movie DNA', icon: Dna }, { label: 'Notifications', icon: Bell }, { label: 'My profile', icon: Users },
   ];
 
   const movieIdFromPath = location.pathname.match(/^\/movie\/(\d+)$/)?.[1];
@@ -82,7 +88,7 @@ function App() {
   };
 
   if (!authReady) return <div className="auth-loading" aria-label="Loading your session"><span className="brand-mark"><img src="/afterscene-mark.svg" alt="" /></span></div>;
-  if (!userId) return <AuthDialog mode={authMode ?? 'signin'} required onClose={() => undefined} onModeChange={setAuthMode} onSuccess={(name) => { setUserName(name); setAuthMode(null); }} />;
+  if (!userId) return <><LandingPage onSignIn={() => setAuthMode('signin')} onCreateAccount={() => setAuthMode('signup')}/>{authMode && <AuthDialog mode={authMode} required onClose={() => setAuthMode(null)} onModeChange={setAuthMode} onSuccess={(name) => { setUserName(name); setAuthMode(null); }}/>}</>;
 
   const accountAction = async () => {
     if (!userName) return setAuthMode('signin');
@@ -110,22 +116,24 @@ function App() {
       <div className="nav-drawer-heading"><b>All pages</b><span>Choose a section to open</span></div>
       <div className="profile-switch"><div className="avatar avatar-lime">{userName?.slice(0, 1).toUpperCase() ?? 'R'}</div><div className="profile-switch-copy"><b>{userName ?? 'Your movie self'}</b><span>{userName ? 'Your space' : 'Make it yours'}</span></div><ChevronDown size={16} /></div>
       <div className="nav-caption">YOUR SPACE</div>
-      <nav className="nav-list">{navItems.map(({ label, icon: Icon }) => <button key={label} title={label} aria-label={label} className={`nav-item ${activeNav === label ? 'nav-active' : ''}`} onClick={() => { setActiveNav(label); setMobileNav(false); }}><Icon size={19} /><span>{label}</span></button>)}</nav>
+      <nav className="nav-list">{navItems.map(({ label, icon: Icon }) => <button key={label} title={label} aria-label={label} className={`nav-item ${['For you', 'Community', 'Schedule'].includes(label) ? 'mobile-nav-duplicate' : ''} ${activeNav === label ? 'nav-active' : ''}`} onClick={() => { setActiveNav(label); setMobileNav(false); }}><Icon size={19} /><span>{label}</span></button>)}</nav>
       <div className="nav-caption library-caption">YOUR COLLECTION</div>
-      <nav className="nav-list">{libraryItems.map(({ label, icon: Icon }) => <button key={label} title={label} aria-label={label} className={`nav-item ${activeNav === label ? 'nav-active' : ''}`} onClick={() => { setActiveNav(label); setMobileNav(false); if (label === 'My profile' && userId) navigate(`/profile/${userId}`); else if (location.pathname.startsWith('/profile/')) navigate('/'); if (!userName && label !== 'My profile') setAuthMode('signin'); }}><Icon size={19} /><span>{label}</span></button>)}</nav>
+      <nav className="nav-list">{libraryItems.map(({ label, icon: Icon }) => <button key={label} title={label} aria-label={label} className={`nav-item ${label === 'My watchlist' ? 'mobile-nav-duplicate' : ''} ${activeNav === label ? 'nav-active' : ''}`} onClick={() => { setActiveNav(label); setMobileNav(false); if (label === 'My profile' && userId) navigate(`/profile/${userId}`); else if (location.pathname.startsWith('/profile/')) navigate('/'); if (!userName && label !== 'My profile') setAuthMode('signin'); }}><Icon size={19} /><span>{label}</span></button>)}</nav>
       <div className="sidebar-bottom"><div className="dna-card"><div className="dna-orbit orbit-one"/><div className="dna-orbit orbit-two"/><Sparkles size={17} className="dna-spark"/><span className="dna-kicker">YOUR TASTE, IN A NUTSHELL</span><strong>Movie DNA</strong><p>Every film you love says something about you.</p><button title="Open Movie DNA" aria-label="Open Movie DNA" onClick={() => setActiveNav('Movie DNA')}><ArrowRight size={14} /></button></div><button className="nav-item help-item" onClick={() => showToast('Afterscene is an early preview. We’re building this together.')}><CircleHelp size={17}/><span>Help & feedback</span></button><div className="sidebar-footer"><span>Made for the love of film</span><span>v0.1 · Preview</span></div></div>
     </aside>
     {mobileNav && <button className="nav-scrim" onClick={() => setMobileNav(false)} aria-label="Close navigation" />}
 
     <main className="main-column">
-      <header className="topbar"><button className="icon-button mobile-menu" onClick={() => setMobileNav(true)} aria-label="Open menu"><Menu size={20}/></button><div className="mobile-brand"><span className="brand-mark"><img src="/afterscene-mark.svg" alt="" /></span>afterscene<span className="brand-dot">.</span></div><div className="breadcrumbs"><span>Home</span><span className="crumb-divider">/</span><b>{activeNav}</b></div><div className="topbar-actions"><button className="icon-button theme-toggle" onClick={() => setLightMode((mode) => !mode)} aria-label={lightMode ? 'Switch to dark mode' : 'Switch to light mode'} title={lightMode ? 'Dark mode' : 'Light mode'}>{lightMode ? <Moon size={18}/> : <Sun size={18}/>}</button><button className="icon-button search-shortcut" onClick={() => document.getElementById('movie-search')?.focus()} aria-label="Search movies"><Search size={18}/></button><button className="icon-button notification-button" onClick={() => showToast('You’re all caught up.')} aria-label="Notifications"><Bell size={18}/><i/></button><button className="top-avatar" onClick={() => { if (userId) navigate(`/profile/${userId}`, { state: { from: location.pathname } }); setActiveNav('My profile'); setMobileNav(false); }} aria-label="Open your profile">{accountProfile.data ? <img src={accountProfile.data} alt=""/> : userName?.slice(0, 1).toUpperCase() ?? <Users size={16}/>}</button></div></header>
+      <header className="topbar"><button className="icon-button mobile-menu" onClick={() => setMobileNav(true)} aria-label="Open menu"><Menu size={20}/></button><div className="mobile-brand"><span className="brand-mark"><img src="/afterscene-mark.svg" alt="" /></span>afterscene<span className="brand-dot">.</span></div><div className="breadcrumbs"><span>Home</span><span className="crumb-divider">/</span><b>{activeNav}</b></div><div className="topbar-actions"><button className="icon-button theme-toggle" onClick={() => setLightMode((mode) => !mode)} aria-label={lightMode ? 'Switch to dark mode' : 'Switch to light mode'} title={lightMode ? 'Dark mode' : 'Light mode'}>{lightMode ? <Moon size={18}/> : <Sun size={18}/>}</button><button className="icon-button search-shortcut" onClick={() => document.getElementById('movie-search')?.focus()} aria-label="Search movies"><Search size={18}/></button><NotificationCenter userId={userId} onNavigate={(path) => { navigate(path); if (path === '/discover') setActiveNav('Discover'); else if (path === '/community') setActiveNav('Community'); }}/><button className="top-avatar" onClick={() => { if (userId) navigate(`/profile/${userId}`, { state: { from: location.pathname } }); setActiveNav('My profile'); setMobileNav(false); }} aria-label="Open your profile">{accountProfile.data ? <img src={avatarUrl(accountProfile.data) ?? ''} alt=""/> : userName?.slice(0, 1).toUpperCase() ?? <Users size={16}/>}</button></div></header>
 
-      <div className={`content-wrap ${activeNav === 'Community' ? 'page-community' : activeNav === 'My watchlist' ? 'page-watchlist' : activeNav === 'Schedule' ? 'page-schedule' : activeNav === 'Movie DNA' ? 'page-dna' : activeNav === 'My profile' ? 'page-profile' : activeNav === 'Movie diary' || activeNav === 'Your people' ? 'page-library' : ''}`}>
+      <div className={`content-wrap ${activeNav === 'Community' ? 'page-community' : activeNav === 'My watchlist' ? 'page-watchlist' : activeNav === 'Schedule' ? 'page-schedule' : activeNav === 'Movie DNA' ? 'page-dna' : activeNav === 'My profile' ? 'page-profile' : activeNav === 'Discover' ? 'page-discover' : activeNav === 'Notifications' ? 'page-notifications' : activeNav === 'Movie diary' ? 'page-library' : ''}`}>
         {activeNav === 'Community' && <CommunityFeed userId={userId} onSignIn={() => setAuthMode('signin')} onOpenMovie={openMovie} onOpenProfile={openProfile}/>}
         {activeNav === 'Schedule' && <SchedulePage onOpen={openMovie}/>}
         {activeNav === 'Movie DNA' && <MovieDnaPage userId={userId}/>}
-        {activeNav === 'My profile' && userId && <ProfileDialog mode="page" profileId={profileIdFromPath ?? userId} userId={userId} onClose={() => { setActiveNav('For you'); navigate('/', { replace: true }); }} onSignIn={() => setAuthMode('signin')} onOpenProfile={openProfile} onSignOut={() => void accountAction()}/>}
-        {(activeNav === 'Movie diary' || activeNav === 'Your people') && <LibraryPage page={activeNav} userId={userId} onSignIn={() => setAuthMode('signin')}/>}
+        {activeNav === 'My profile' && userId && <ProfilePage profileId={profileIdFromPath ?? userId} userId={userId} onBack={() => { setActiveNav('For you'); navigate('/', { replace: true }); }} onToast={showToast} onOpenProfile={openProfile}/>}
+        {activeNav === 'Notifications' && userId && <NotificationsPage userId={userId} onNavigate={navigate}/>}
+        {activeNav === 'Discover' && <DiscoverPage onOpen={openMovie} onSave={addToWatchlist}/>}
+        {activeNav === 'Movie diary' && <LibraryPage page={activeNav} userId={userId} onSignIn={() => setAuthMode('signin')}/>}
         {activeNav === 'My watchlist' && <section className="watchlist-page"><div className="community-page-heading"><span><Bookmark size={14}/> YOUR COLLECTION</span><h1>Your next great<br/><i>watch is in here.</i></h1><p>Movies you saved for later, all in one place.</p></div>{!userId ? <div className="community-empty"><Bookmark size={25}/><b>Sign in to see your watchlist.</b><button className="page-primary" onClick={() => setAuthMode('signin')}>Sign in</button></div> : watchlist.isPending ? <p className="community-state">Loading your watchlist…</p> : watchlist.isError ? <div className="community-state community-error">{watchlist.error.message}</div> : watchlist.data?.results.length ? <div className="movie-grid">{watchlist.data.results.map((movie, index) => <MovieCard key={movie.id} movie={movie} index={index} onOpen={openMovie} onSave={addToWatchlist}/>)}</div> : <div className="community-empty"><Bookmark size={25}/><b>Your watchlist is ready for its first movie.</b><span>Open a film and tap “Add to watchlist” to save it here.</span><button className="page-primary" onClick={() => setActiveNav('For you')}>Find a film</button></div>}</section>}
         {activeNav !== 'Community' && activeNav !== 'Schedule' && activeNav !== 'Movie DNA' && activeNav !== 'My watchlist' && activeNav !== 'My profile' && <section className="welcome-row"><div><div className="eyebrow"><span className="eyebrow-line"/> YOUR FILM SPACE</div><h1 className="compact-welcome">Welcome back<span>.</span></h1></div></section>}
 
@@ -137,7 +145,7 @@ function App() {
           {!search.trim() && !trending.isFetching && !trending.isError && movies.length === 0 && <div className="setup-note"><div className="setup-poster"><Film size={23}/></div><div><span className="setup-label">FIRST, A LITTLE SETUP</span><h3>Your movie shelf is almost ready.</h3><p>Add your TMDB API key and Supabase project credentials to start discovering and saving real films.</p><a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noreferrer">Get a TMDB key <ArrowUpRightIcon/></a></div></div>}
           {search.trim() && !results.isFetching && !results.isError && movies.length === 0 && results.data && <div className="empty-results"><Search size={21}/><b>No films found for “{search}”</b><span>Try a different title or spelling.</span></div>}
           {movies.length > 0 && <div className="movie-grid">{movies.slice(0, 10).map((movie, index) => <MovieCard key={movie.id} movie={movie} index={index} onOpen={openMovie} onSave={addToWatchlist}/>)}</div>}
-          {!search.trim() && <div className="section-more"><span><i/> Updated as film people find their next favorite</span><button onClick={() => showToast('More discovery lanes are on the way.')}>See all films <ArrowRight size={14}/></button></div>}
+          {!search.trim() && <div className="section-more"><span><i/> Updated as film people find their next favorite</span><button onClick={() => setActiveNav('Discover')}>See all films <ArrowRight size={14}/></button></div>}
         </section>}
 
 
