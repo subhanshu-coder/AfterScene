@@ -57,7 +57,7 @@ export async function getMovieSchedule(bucket: ScheduleBucket, year: number, pag
   url.searchParams.set(`${dateField}.lte`, to);
   url.searchParams.set('sort_by', 'popularity.desc');
   url.searchParams.set('page', String(page));
-  if (media === 'movie') url.searchParams.set('region', 'IN');
+  if (media === 'movie' && bucket !== 'announced') url.searchParams.set('region', 'IN');
   if (media === 'anime') {
     url.searchParams.set('with_genres', '16');
     url.searchParams.set('with_original_language', 'ja');
