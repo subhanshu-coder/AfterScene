@@ -2,8 +2,10 @@ import type { MovieResponse } from '../types/movie';
 
 const apiBase = import.meta.env.PROD ? '' : import.meta.env.VITE_API_URL ?? 'http://localhost:4000';
 
-async function getMovies(path: string, signal?: AbortSignal): Promise<MovieResponse> {
-  const response = await fetch(`${apiBase}/api/movies/${path}`, { signal });
+async function getMovies(path: string, signal?: AbortSignal, page?: number): Promise<MovieResponse> {
+  const url = new URL(`${apiBase}/api/movies/${path}`, window.location.origin);
+  if (page) url.searchParams.set('page', String(page));
+  const response = await fetch(url, { signal });
   if (!response.ok) {
     const body = await response.json().catch(() => null) as { error?: { message?: string } } | null;
     if (response.status === 503) throw new Error(body?.error?.message ?? 'Add TMDB_API_KEY to the backend environment to enable movie discovery.');
@@ -12,7 +14,7 @@ async function getMovies(path: string, signal?: AbortSignal): Promise<MovieRespo
   return response.json() as Promise<MovieResponse>;
 }
 
-export const discoverMovies = (signal?: AbortSignal) => getMovies('trending', signal);
+export const discoverMovies = (signal?: AbortSignal, page = 1) => getMovies('trending', signal, page);
 export const searchMovies = (query: string, signal?: AbortSignal) => getMovies(`search?q=${encodeURIComponent(query)}`, signal);
 export const getAnime = (signal?: AbortSignal) => getMovies('anime', signal);
 export const getStreamingMovies = async (provider: string, signal?: AbortSignal): Promise<{ providerName: string | null; results: MovieResponse['results'] }> => {
