@@ -1,33 +1,71 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { CalendarDays, Check, Clock3, Megaphone, Popcorn } from 'lucide-react';
-import { getMovieSchedule, type ScheduleBucket } from '../services/movies';
+import { getMovieSchedule, type ScheduleBucket, type ScheduleMedia } from '../services/movies';
 import type { Movie } from '../types/movie';
 
 type SchedulePageProps = { onOpen: (movie: Movie) => void };
 const sections: { id: ScheduleBucket; label: string; icon: typeof CalendarDays; hint: string }[] = [
-  { id: 'released', label: 'Released', icon: Check, hint: 'Films released this year' },
-  { id: 'today', label: 'Today', icon: CalendarDays, hint: 'Films dated for today' },
+  { id: 'released', label: 'Released', icon: Check, hint: 'Popular titles released this year' },
+  { id: 'today', label: 'Today', icon: CalendarDays, hint: 'Titles dated for today in India' },
   { id: 'upcoming', label: 'Upcoming', icon: Clock3, hint: 'The next 90 days' },
   { id: 'announced', label: 'Announced', icon: Megaphone, hint: 'Later dated releases' },
 ];
+const mediaOptions: { id: ScheduleMedia; label: string }[] = [
+  { id: 'movie', label: 'Movies' },
+  { id: 'tv', label: 'TV series' },
+  { id: 'anime', label: 'Anime' },
+];
 
 export default function SchedulePage({ onOpen }: SchedulePageProps) {
-  const currentYear = new Date().getUTCFullYear();
+  const currentYear = Number(new Intl.DateTimeFormat('en', { timeZone: 'Asia/Kolkata', year: 'numeric' }).format(new Date()));
   const [year, setYear] = useState(currentYear);
   const [bucket, setBucket] = useState<ScheduleBucket>('upcoming');
+  const [media, setMedia] = useState<ScheduleMedia>('movie');
   const [page, setPage] = useState(1);
-  const schedule = useQuery({ queryKey: ['movie-schedule', bucket, year, page], queryFn: ({ signal }) => getMovieSchedule(bucket, year, signal, page) });
+  const schedule = useQuery({
+    queryKey: ['title-schedule', media, bucket, year, page],
+    queryFn: ({ signal }) => getMovieSchedule(bucket, year, signal, page, media),
+  });
   const selected = sections.find((section) => section.id === bucket)!;
+  const selectedMedia = mediaOptions.find((option) => option.id === media)!;
+  const titleCount = schedule.data?.total_results ?? 0;
 
   return <section className="schedule-page">
-    <header className="schedule-heading"><div><span className="schedule-eyebrow"><CalendarDays size={15}/> RELEASE CALENDAR</span><h1>Movie schedule</h1><p>Find what’s in theaters, today, and on the way.</p></div><label className="schedule-year">Year<select value={year} onChange={(event) => { setYear(Number(event.target.value)); setPage(1); }}>{Array.from({ length: currentYear - 1999 + 6 }, (_, index) => currentYear + 5 - index).map((option) => <option value={option} key={option}>{option}</option>)}</select></label></header>
-    <div className="schedule-tabs" role="tablist" aria-label="Release schedule">{sections.map(({ id, label, icon: Icon }) => <button type="button" role="tab" aria-selected={bucket === id} key={id} onClick={() => { setBucket(id); setPage(1); }}><Icon size={17}/>{label}</button>)}</div>
-    <div className="schedule-results-heading"><div><h2>{selected.label} in {year}</h2><span>{selected.hint} · data from TMDB</span></div>{schedule.data && <span className="schedule-result-count">{schedule.data.total_results} films</span>}</div>
+    <header className="schedule-heading">
+      <div>
+        <span className="schedule-eyebrow"><CalendarDays size={15}/> RELEASE CALENDAR</span>
+        <h1>Movie schedule</h1>
+        <p>Browse real release dates for films, series, and anime.</p>
+      </div>
+      <label className="schedule-year">Year<select value={year} onChange={(event) => { setYear(Number(event.target.value)); setPage(1); }}>
+        {Array.from({ length: currentYear - 1999 + 6 }, (_, index) => currentYear + 5 - index).map((option) => <option value={option} key={option}>{option}</option>)}
+      </select></label>
+    </header>
+    <div className="schedule-media-tabs" role="tablist" aria-label="Title type">
+      {mediaOptions.map((option) => <button type="button" role="tab" aria-selected={media === option.id} key={option.id} onClick={() => { setMedia(option.id); setPage(1); }}>{option.label}</button>)}
+    </div>
+    <div className="schedule-tabs" role="tablist" aria-label="Release schedule">
+      {sections.map(({ id, label, icon: Icon }) => <button type="button" role="tab" aria-selected={bucket === id} key={id} onClick={() => { setBucket(id); setPage(1); }}><Icon size={17}/>{label}</button>)}
+    </div>
+    <div className="schedule-results-heading">
+      <div><h2>{selected.label} {selectedMedia.label.toLowerCase()} in {year}</h2><span>{selected.hint} · real TMDB data · India-local dates</span></div>
+      {schedule.data && <span className="schedule-result-count">{titleCount} {media === 'movie' ? 'films' : media === 'anime' ? 'anime series' : 'series'}</span>}
+    </div>
     {schedule.isPending && <div className="schedule-grid">{Array.from({ length: 8 }, (_, index) => <div key={index} className="schedule-skeleton"/>)}</div>}
     {schedule.isError && <div className="schedule-error"><b>Schedule unavailable</b><span>{schedule.error.message}</span><button type="button" onClick={() => void schedule.refetch()}>Try again</button></div>}
-    {!schedule.isPending && !schedule.isError && schedule.data?.results.length === 0 && <div className="schedule-empty"><Popcorn size={25}/><b>No releases in this section yet.</b><span>Try another year or release category.</span></div>}
-    <div className="schedule-grid">{schedule.data?.results.map((movie) => <button className="schedule-movie" type="button" key={movie.id} onClick={() => onOpen(movie)}><span className="schedule-poster">{movie.poster_path ? <img src={`https://image.tmdb.org/t/p/w342${movie.poster_path}`} alt={`${movie.title} poster`} loading="lazy"/> : <Popcorn size={22}/>}</span><span className="schedule-movie-title">{movie.title}</span><span className="schedule-release-date">{movie.release_date || 'Date not listed'}</span></button>)}</div>
-    {schedule.data && schedule.data.total_pages > 1 && <nav className="schedule-pagination" aria-label="Schedule pages"><button type="button" disabled={page <= 1 || schedule.isFetching} onClick={() => setPage((current) => current - 1)}>Previous</button><span>Page {page} of {Math.min(schedule.data.total_pages, 500)}</span><button type="button" disabled={page >= Math.min(schedule.data.total_pages, 500) || schedule.isFetching} onClick={() => setPage((current) => current + 1)}>Next</button></nav>}
+    {!schedule.isPending && !schedule.isError && schedule.data?.results.length === 0 && <div className="schedule-empty"><Popcorn size={25}/><b>No {selectedMedia.label.toLowerCase()} listed for this period yet.</b><span>Try a different year or release category. New titles appear as TMDB receives date information.</span></div>}
+    <div className="schedule-grid">{schedule.data?.results.map((title) => {
+      const destination = title.media_type === 'tv' || media !== 'movie' ? `https://www.themoviedb.org/tv/${title.id}` : null;
+      const card = <><span className="schedule-poster">{title.poster_path ? <img src={`https://image.tmdb.org/t/p/w342${title.poster_path}`} alt={`${title.title} poster`} loading="lazy"/> : <Popcorn size={22}/>}</span><span className="schedule-movie-title">{title.title}</span><span className="schedule-release-date">{title.release_date || 'Date not listed'}</span></>;
+      return destination
+        ? <a className="schedule-movie" href={destination} target="_blank" rel="noreferrer" key={title.id}>{card}</a>
+        : <button className="schedule-movie" type="button" key={title.id} onClick={() => onOpen(title)}>{card}</button>;
+    })}</div>
+    {schedule.data && schedule.data.total_pages > 1 && <nav className="schedule-pagination" aria-label="Schedule pages">
+      <button type="button" disabled={page <= 1 || schedule.isFetching} onClick={() => setPage((current) => current - 1)}>Previous</button>
+      <span>Page {page} of {Math.min(schedule.data.total_pages, 500)}</span>
+      <button type="button" disabled={page >= Math.min(schedule.data.total_pages, 500) || schedule.isFetching} onClick={() => setPage((current) => current + 1)}>Next</button>
+    </nav>}
   </section>;
 }
