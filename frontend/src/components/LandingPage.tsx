@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, Clapperboard, Heart, Play, Sparkles, Users } from 'lucide-react';
-import { trendingMovies } from '../services/movies';
+import { discoverMovies } from '../services/movies';
 import BrandMark from './BrandMark';
 
 export default function LandingPage({ onSignIn, onCreateAccount }: { onSignIn: () => void; onCreateAccount: () => void }) {
-  const featured = useQuery({ queryKey: ['public-featured-film'], queryFn: ({ signal }) => trendingMovies(signal), staleTime: 5 * 60_000 });
+  const featured = useQuery({ queryKey: ['public-featured-film'], queryFn: ({ signal }) => discoverMovies(signal), staleTime: 5 * 60_000 });
   const movie = featured.data?.results.find((item) => item.backdrop_path) ?? featured.data?.results[0];
   const backdrop = movie?.backdrop_path ? `https://image.tmdb.org/t/p/original${movie.backdrop_path}` : null;
   return <main className="landing-page">
