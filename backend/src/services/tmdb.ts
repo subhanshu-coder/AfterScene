@@ -41,16 +41,16 @@ export async function getMovieDetail(tmdbId: number): Promise<Record<string, unk
   return data;
 }
 
-export async function getMovies(kind: 'trending' | 'search', query?: string): Promise<TmdbResponse> {
+export async function getMovies(kind: 'trending' | 'search', query?: string, page = 1): Promise<TmdbResponse> {
   if (!env.TMDB_API_KEY) throw Object.assign(new Error('Movie discovery is not configured yet. Add TMDB_API_KEY to the backend environment.'), { statusCode: 503 });
-  const cacheKey = `${kind}:${query ?? ''}`;
+  const cacheKey = `${kind}:${query ?? ''}:${page}`;
   const cached = cache.get(cacheKey);
   if (cached && cached.expires > Date.now()) return cached.data;
   const endpoint = kind === 'trending' ? '/trending/movie/week' : '/search/movie';
   const url = new URL(`${env.TMDB_BASE_URL}${endpoint}`);
   url.searchParams.set('api_key', env.TMDB_API_KEY);
   url.searchParams.set('language', 'en-US');
-  url.searchParams.set('page', '1');
+  url.searchParams.set('page', String(page));
   if (query) url.searchParams.set('query', query);
   let response: Response;
   try {
