@@ -98,7 +98,7 @@ export default function ProfilePage({ profileId, userId, onBack, onToast, onOpen
     <button className="profile-back" onClick={onBack}><ArrowLeft size={17}/> Back to {ownProfile ? 'home' : 'community'}</button>
     <header className="profile-hero">
       <div className="profile-avatar-wrap">
-        <span className="profile-page-avatar">{person.avatar_url ? <img src={avatarUrl(person.avatar_url) ?? ''} alt={`${person.display_name}'s profile`} /> : person.display_name.slice(0, 1).toUpperCase()}</span>
+        <span className="profile-page-avatar">{person.avatar_url ? <img src={avatarUrl(person.avatar_url) ?? ''} alt={`${person.display_name}'s profile`} loading="lazy" decoding="async" /> : person.display_name.slice(0, 1).toUpperCase()}</span>
         {ownProfile && <label className="profile-avatar-upload" aria-label="Upload profile photo">{uploading ? <LoaderCircle className="spinning" size={17}/> : <Camera size={17}/>}<input type="file" accept="image/jpeg,image/png,image/webp" disabled={uploading} onChange={(event) => { void uploadAvatar(event.target.files?.[0]); event.currentTarget.value = ''; }}/></label>}
       </div>
       <div className="profile-hero-copy"><span className="profile-kicker">{ownProfile ? 'YOUR FILM IDENTITY' : 'AFTERSCENE MEMBER'}</span><h1>{person.display_name}</h1><p className="profile-handle">@{person.username}</p><p className="profile-bio">{person.bio || 'Movie lover, collecting stories one scene at a time.'}</p></div>
