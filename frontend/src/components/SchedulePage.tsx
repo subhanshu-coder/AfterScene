@@ -64,7 +64,7 @@ export default function SchedulePage({ onOpen }: SchedulePageProps) {
     })}</div>
     {schedule.data && schedule.data.total_pages > 1 && <nav className="schedule-pagination" aria-label="Schedule pages">
       <button type="button" disabled={page <= 1 || schedule.isFetching} onClick={() => setPage((current) => current - 1)}>Previous</button>
-      <span>Page {page} of {Math.min(schedule.data.total_pages, 500)}</span>
+      <span aria-live="polite" aria-atomic="true">Page {page} of {Math.min(schedule.data.total_pages, 500)}</span>
       <button type="button" disabled={page >= Math.min(schedule.data.total_pages, 500) || schedule.isFetching} onClick={() => setPage((current) => current + 1)}>Next</button>
     </nav>}
   </section>;
