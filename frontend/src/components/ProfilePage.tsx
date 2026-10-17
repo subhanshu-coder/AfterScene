@@ -105,10 +105,10 @@ export default function ProfilePage({ profileId, userId, onBack, onToast, onOpen
       {!ownProfile && <button className="profile-follow-button" onClick={() => void toggleFollow()}>{person.is_private ? <UserRoundPlus size={16}/> : profile.data.isFollowing ? <UserRoundCheck size={16}/> : <UserRoundPlus size={16}/>} {profile.data.isFollowing ? 'Following' : 'Follow'}</button>}
     </header>
     <div className="profile-stats">
-      <button className={tab === 'posts' ? 'selected' : ''} onClick={() => setTab('posts')}><b>{profile.data.posts.length}</b><span>Posts</span></button>
-      <button className={tab === 'followers' ? 'selected' : ''} onClick={() => setTab('followers')}><b>{profile.data.followers}</b><span>Followers</span></button>
-      <button className={tab === 'following' ? 'selected' : ''} onClick={() => setTab('following')}><b>{profile.data.following}</b><span>Following</span></button>
-      <button className={tab === 'reviews' ? 'selected' : ''} onClick={() => setTab('reviews')}><b>{profile.data.reviews.length}</b><span>Reviews</span></button>
+      <button type="button" aria-pressed={tab === 'posts'} className={tab === 'posts' ? 'selected' : ''} onClick={() => setTab('posts')}><b>{profile.data.posts.length}</b><span>Posts</span></button>
+      <button type="button" aria-pressed={tab === 'followers'} className={tab === 'followers' ? 'selected' : ''} onClick={() => setTab('followers')}><b>{profile.data.followers}</b><span>Followers</span></button>
+      <button type="button" aria-pressed={tab === 'following'} className={tab === 'following' ? 'selected' : ''} onClick={() => setTab('following')}><b>{profile.data.following}</b><span>Following</span></button>
+      <button type="button" aria-pressed={tab === 'reviews'} className={tab === 'reviews' ? 'selected' : ''} onClick={() => setTab('reviews')}><b>{profile.data.reviews.length}</b><span>Reviews</span></button>
     </div>
     {(tab === 'posts' || tab === 'reviews') && <div className="profile-posts">
       <div className="profile-section-title"><Film size={17}/><h2>{tab === 'posts' ? 'Recent posts' : 'Movie reviews'}</h2></div>
