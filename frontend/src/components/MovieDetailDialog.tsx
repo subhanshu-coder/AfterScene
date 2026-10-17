@@ -14,6 +14,11 @@ const posterBase = 'https://image.tmdb.org/t/p/w500';
 const backdropBase = 'https://image.tmdb.org/t/p/w1280';
 
 export default function MovieDetailDialog({ movie, userName, userId, onClose, onSignIn, onToast, onOpenProfile }: Props) {
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [onClose]);
   const [myRating, setMyRating] = useState<number | null>(null);
   const [watchStatus, setWatchStatus] = useState<string | null>(null);
   const [saving, setSaving] = useState<'rating' | 'watchlist' | null>(null);
