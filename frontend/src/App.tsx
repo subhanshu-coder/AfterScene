@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { ArrowRight, Bookmark, CalendarDays, ChevronDown, CircleHelp, Film, Flame, Home, LogOut, Moon, Plus, Search, Settings2, Sparkles, Star, Sun, Users, X } from 'lucide-react';
+import { ArrowRight, Bookmark, CalendarDays, ChevronDown, CircleHelp, CircleUserRound, Film, Flame, Home, LogOut, Moon, Plus, Search, Settings2, Sparkles, Star, Sun, Users, X } from 'lucide-react';
 import AuthDialog from './components/AuthDialog';
 import CommunityFeed from './components/CommunityFeed';
 import DiscoverPage from './components/DiscoverPage';
