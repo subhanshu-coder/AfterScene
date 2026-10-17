@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { ArrowRight, Bookmark, CalendarDays, ChevronDown, CircleHelp, Film, Flame, Home, LogOut, Menu, Moon, Plus, Search, Settings2, Sparkles, Star, Sun, Users, X } from 'lucide-react';
+import { ArrowRight, Bookmark, CalendarDays, ChevronDown, CircleHelp, Film, Flame, Home, LogOut, Moon, Plus, Search, Settings2, Sparkles, Star, Sun, Users, X } from 'lucide-react';
 import AuthDialog from './components/AuthDialog';
 import CommunityFeed from './components/CommunityFeed';
 import DiscoverPage from './components/DiscoverPage';
@@ -153,7 +153,7 @@ function App() {
     </main>
 
  {toast && <motion.div className="toast" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}><Sparkles size={16}/>{toast}<button onClick={() => setToast('')} aria-label="Dismiss message"><X size={15}/></button></motion.div>}
-    <nav className="mobile-bottom-nav" aria-label="Mobile navigation">{navItems.slice(0,4).map(({ label, icon: Icon }) => <button key={label} title={label === 'For you' ? 'Home' : label} aria-label={label === 'For you' ? 'Home' : label} className={activeNav === label ? 'bottom-active' : ''} onClick={() => { setActiveNav(label); if (label === 'My movies') setMovieSpaceTab('Watchlist'); }}><Icon size={19}/><span>{label === 'For you' ? 'Home' : label}</span></button>)}</nav>
+    <nav className="mobile-bottom-nav" aria-label="Mobile navigation">{navItems.map(({ label, icon: Icon }) => <button key={label} title={label === 'For you' ? 'Home' : label} aria-label={label === 'For you' ? 'Home' : label} className={activeNav === label ? 'bottom-active' : ''} onClick={() => { setActiveNav(label); if (label === 'My movies') setMovieSpaceTab('Watchlist'); if (label === 'My profile' && userId) navigate(`/profile/${userId}`); }}><Icon size={19}/><span>{label === 'For you' ? 'Home' : label === 'My profile' ? 'Profile' : label}</span></button>)}</nav>
     {(selectedMovie || (movieIdFromPath && routeMovie.data)) && <MovieDetailDialog movie={selectedMovie ?? routeMovie.data!} userName={userName} userId={userId} onClose={closeMovie} onSignIn={() => setAuthMode('signin')} onToast={showToast} onOpenProfile={openProfile}/>}
     {authMode && <AuthDialog mode={authMode} onClose={() => setAuthMode(null)} onModeChange={setAuthMode} onSuccess={(name) => { setUserName(name); setAuthMode(null); showToast('Welcome to Afterscene.'); }} />}
   </div>;
