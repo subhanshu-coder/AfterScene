@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { ArrowRight, Bookmark, CalendarDays, ChevronDown, CircleHelp, Film, Flame, Home, LogOut, Moon, Plus, Search, Settings2, Sparkles, Star, Sun, Users, X } from 'lucide-react';
+import { ArrowRight, Bookmark, CalendarDays, ChevronDown, CircleHelp, CircleUserRound, Film, Flame, Home, LogOut, Moon, Plus, Search, Settings2, Sparkles, Star, Sun, Users, X } from 'lucide-react';
 import AuthDialog from './components/AuthDialog';
 import CommunityFeed from './components/CommunityFeed';
 import DiscoverPage from './components/DiscoverPage';
@@ -69,7 +69,7 @@ function App() {
 
   const movies = (search.trim() ? results.data?.results : trending.data?.results) ?? [];
   const navItems = [
-    { label: 'For you', icon: Home }, { label: 'Community', icon: Users }, { label: 'Schedule', icon: CalendarDays }, { label: 'My movies', icon: Bookmark }, { label: 'My profile', icon: Users },
+    { label: 'For you', icon: Home }, { label: 'Community', icon: Users }, { label: 'Schedule', icon: CalendarDays }, { label: 'My movies', icon: Bookmark }, { label: 'My profile', icon: CircleUserRound },
   ];
   const movieIdFromPath = location.pathname.match(/^\/movie\/(\d+)$/)?.[1];
   const routeMovie = useQuery({ queryKey: ['movie-route', movieIdFromPath], enabled: Boolean(movieIdFromPath), queryFn: async ({ signal }) => { const response = await fetch(`${import.meta.env.PROD ? '' : import.meta.env.VITE_API_URL ?? 'http://localhost:4000'}/api/movies/${movieIdFromPath}`, { signal }); if (!response.ok) throw new Error('Movie details could not be loaded.'); const data = await response.json() as Partial<Movie>; return { id: Number(data.id ?? movieIdFromPath), title: data.title ?? 'Movie', overview: data.overview ?? '', poster_path: data.poster_path ?? null, backdrop_path: data.backdrop_path ?? null, release_date: data.release_date ?? '', vote_average: data.vote_average ?? 0, genre_ids: data.genre_ids ?? [] } as Movie; } });
@@ -114,7 +114,7 @@ function App() {
       <div className="nav-drawer-heading"><b>All pages</b><span>Choose a section to open</span></div>
       <div className="profile-switch"><div className="avatar avatar-lime">{userName?.slice(0, 1).toUpperCase() ?? 'R'}</div><div className="profile-switch-copy"><b>{userName ?? 'Your movie self'}</b><span>{userName ? 'Your space' : 'Make it yours'}</span></div><ChevronDown size={16} /></div>
       <div className="nav-caption">YOUR SPACE</div>
-      <nav className="nav-list">{navItems.map(({ label, icon: Icon }) => <button key={label} title={label} aria-label={label} className={`nav-item ${['For you', 'Community', 'Schedule'].includes(label) ? 'mobile-nav-duplicate' : ''} ${activeNav === label ? 'nav-active' : ''}`} onClick={() => { setActiveNav(label); setMobileNav(false); if (label === 'My movies') setMovieSpaceTab('Watchlist'); if (label === 'My profile' && userId) navigate(`/profile/${userId}`); }}><Icon size={19} /><span>{label === 'For you' ? 'Home' : label}</span></button>)}</nav>
+      <nav className="nav-list">{navItems.map(({ label, icon: Icon }) => <button key={label} title={label} aria-label={label} aria-current={activeNav === label ? 'page' : undefined} className={`nav-item ${['For you', 'Community', 'Schedule'].includes(label) ? 'mobile-nav-duplicate' : ''} ${activeNav === label ? 'nav-active' : ''}`} onClick={() => { setActiveNav(label); setMobileNav(false); if (label === 'My movies') setMovieSpaceTab('Watchlist'); if (label === 'My profile' && userId) navigate(`/profile/${userId}`); }}><Icon size={19} /><span>{label === 'For you' ? 'Home' : label}</span></button>)}</nav>
       
       <div className="sidebar-bottom"><button className="nav-item help-item" onClick={() => showToast('Afterscene is an early preview. We’re building this together.')}><CircleHelp size={17}/><span>Help & feedback</span></button><button className="nav-item signout-item" onClick={() => void accountAction()}><LogOut size={17}/><span>Sign out</span></button><div className="sidebar-footer"><span>Made for the love of film</span><span>v0.1 · Preview</span></div></div>
     </aside>
