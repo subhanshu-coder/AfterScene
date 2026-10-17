@@ -69,7 +69,7 @@ function App() {
 
   const movies = (search.trim() ? results.data?.results : trending.data?.results) ?? [];
   const navItems = [
-    { label: 'For you', icon: Home }, { label: 'Community', icon: Users }, { label: 'Schedule', icon: CalendarDays }, { label: 'My movies', icon: Bookmark }, { label: 'My profile', icon: Users },
+    { label: 'For you', icon: Home }, { label: 'Community', icon: Users }, { label: 'Schedule', icon: CalendarDays }, { label: 'My movies', icon: Bookmark }, { label: 'My profile', icon: CircleUserRound },
   ];
   const movieIdFromPath = location.pathname.match(/^\/movie\/(\d+)$/)?.[1];
   const routeMovie = useQuery({ queryKey: ['movie-route', movieIdFromPath], enabled: Boolean(movieIdFromPath), queryFn: async ({ signal }) => { const response = await fetch(`${import.meta.env.PROD ? '' : import.meta.env.VITE_API_URL ?? 'http://localhost:4000'}/api/movies/${movieIdFromPath}`, { signal }); if (!response.ok) throw new Error('Movie details could not be loaded.'); const data = await response.json() as Partial<Movie>; return { id: Number(data.id ?? movieIdFromPath), title: data.title ?? 'Movie', overview: data.overview ?? '', poster_path: data.poster_path ?? null, backdrop_path: data.backdrop_path ?? null, release_date: data.release_date ?? '', vote_average: data.vote_average ?? 0, genre_ids: data.genre_ids ?? [] } as Movie; } });
