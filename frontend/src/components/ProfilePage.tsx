@@ -102,7 +102,7 @@ export default function ProfilePage({ profileId, userId, onBack, onToast, onOpen
         {ownProfile && <label className="profile-avatar-upload" aria-label="Upload profile photo">{uploading ? <LoaderCircle className="spinning" size={17}/> : <Camera size={17}/>}<input type="file" accept="image/jpeg,image/png,image/webp" disabled={uploading} onChange={(event) => { void uploadAvatar(event.target.files?.[0]); event.currentTarget.value = ''; }}/></label>}
       </div>
       <div className="profile-hero-copy"><span className="profile-kicker">{ownProfile ? 'YOUR FILM IDENTITY' : 'AFTERSCENE MEMBER'}</span><h1>{person.display_name}</h1><p className="profile-handle">@{person.username}</p><p className="profile-bio">{person.bio || 'Movie lover, collecting stories one scene at a time.'}</p></div>
-      {!ownProfile && <button className="profile-follow-button" onClick={() => void toggleFollow()}>{person.is_private ? <UserRoundPlus size={16}/> : profile.data.isFollowing ? <UserRoundCheck size={16}/> : <UserRoundPlus size={16}/>} {profile.data.isFollowing ? 'Following' : 'Follow'}</button>}
+      {!ownProfile && <button className="profile-follow-button" aria-pressed={profile.data.isFollowing} onClick={() => void toggleFollow()}>{person.is_private ? <UserRoundPlus size={16}/> : profile.data.isFollowing ? <UserRoundCheck size={16}/> : <UserRoundPlus size={16}/>} {profile.data.isFollowing ? 'Following' : 'Follow'}</button>}
     </header>
     <div className="profile-stats">
       <button type="button" aria-pressed={tab === 'posts'} className={tab === 'posts' ? 'selected' : ''} onClick={() => setTab('posts')}><b>{profile.data.posts.length}</b><span>Posts</span></button>
