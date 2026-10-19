@@ -41,3 +41,5 @@ body.nav-locked{overflow:hidden;touch-action:none}
 .standalone-profile-shell .profile-stats button{min-width:0;display:grid;justify-items:start;gap:3px;padding:14px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--text);text-align:left;cursor:pointer;}
 
 .standalone-profile-shell .profile-stats button.selected{border-color:var(--lime);background:color-mix(in srgb,var(--lime) 9%,var(--panel));}
+
+.standalone-profile-shell :is(button,a,input):focus-visible{outline:2px solid var(--lime);outline-offset:3px;}
