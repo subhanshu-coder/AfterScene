@@ -39,3 +39,5 @@ body.nav-locked{overflow:hidden;touch-action:none}
 .standalone-profile-shell .profile-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:22px 0;}
 
 .standalone-profile-shell .profile-stats button{min-width:0;display:grid;justify-items:start;gap:3px;padding:14px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--text);text-align:left;cursor:pointer;}
+
+.standalone-profile-shell .profile-stats button.selected{border-color:var(--lime);background:color-mix(in srgb,var(--lime) 9%,var(--panel));}
