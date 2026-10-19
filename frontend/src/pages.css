@@ -29,3 +29,19 @@ body.nav-locked{overflow:hidden;touch-action:none}
 
 .movie-space-page{max-width:1120px;margin:0 auto;padding:26px 0 60px}.movie-space-heading>span{color:var(--lime);font-size:11px;font-weight:750;letter-spacing:.13em}.movie-space-heading h1{margin:7px 0;font-size:clamp(30px,5vw,42px);letter-spacing:-1.3px}.movie-space-heading p{margin:0;color:var(--muted);font-size:15px}.movie-space-tabs{display:flex;gap:7px;overflow-x:auto;margin:20px 0 24px;border-bottom:1px solid var(--line)}.movie-space-tabs button{flex:none;padding:10px 14px;border:0;border-bottom:2px solid transparent;background:transparent;color:var(--muted);font:inherit;cursor:pointer}.movie-space-tabs button[aria-pressed=true]{border-color:var(--lime);color:var(--lime)}.movie-space-page .dna-page,.movie-space-page .library-page{padding-top:0}.home-film-index{margin-top:32px;border-top:1px solid var(--line);padding-top:18px}
 @media(max-width:760px){.movie-space-page{padding-top:18px}.movie-space-tabs button{padding:10px 12px;font-size:14px}}
+
+.standalone-profile-shell{min-height:100svh;background:var(--bg);}
+
+.standalone-profile-shell>.profile-page{width:min(100%,1040px);margin:0 auto;padding:clamp(24px,5vw,64px) clamp(18px,5vw,56px);}
+
+.standalone-profile-shell .profile-back{min-height:44px;padding:8px 10px;border-radius:8px;}
+
+.standalone-profile-shell .profile-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:22px 0;}
+
+.standalone-profile-shell .profile-stats button{min-width:0;display:grid;justify-items:start;gap:3px;padding:14px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--text);text-align:left;cursor:pointer;}
+
+.standalone-profile-shell .profile-stats button.selected{border-color:var(--lime);background:color-mix(in srgb,var(--lime) 9%,var(--panel));}
+
+.standalone-profile-shell :is(button,a,input):focus-visible{outline:2px solid var(--lime);outline-offset:3px;}
+
+@media(max-width:600px){.standalone-profile-shell>.profile-page{padding:18px 14px 40px}.standalone-profile-shell .profile-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.standalone-profile-shell .profile-stats button{padding:11px}.standalone-profile-shell .profile-hero{flex-wrap:wrap}.standalone-profile-shell .profile-follow-button{margin-left:auto}}

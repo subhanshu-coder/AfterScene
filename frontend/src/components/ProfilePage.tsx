@@ -90,8 +90,8 @@ export default function ProfilePage({ profileId, userId, onBack, onToast, onOpen
     }
   }
 
-  if (profile.isPending) return <section className="profile-page"><p className="community-state">Loading profile…</p></section>;
-  if (profile.isError || !profile.data) return <section className="profile-page"><button className="profile-back" onClick={onBack}><ArrowLeft size={17}/> Back</button><div className="community-error-panel"><b>Profile unavailable</b><span>{profile.error?.message ?? 'This profile could not be loaded.'}</span><button onClick={() => void profile.refetch()}>Try again</button></div></section>;
+  if (profile.isPending) return <section className="profile-page"><p className="community-state" role="status" aria-live="polite">Loading profile…</p></section>;
+  if (profile.isError || !profile.data) return <section className="profile-page"><button className="profile-back" onClick={onBack}><ArrowLeft size={17}/> Back</button><div className="community-error-panel" role="alert"><b>Profile unavailable</b><span>{profile.error?.message ?? 'This profile could not be loaded.'}</span><button onClick={() => void profile.refetch()}>Try again</button></div></section>;
   const person = profile.data.user;
 
   return <section className="profile-page">
@@ -104,7 +104,7 @@ export default function ProfilePage({ profileId, userId, onBack, onToast, onOpen
       <div className="profile-hero-copy"><span className="profile-kicker">{ownProfile ? 'YOUR FILM IDENTITY' : 'AFTERSCENE MEMBER'}</span><h1>{person.display_name}</h1><p className="profile-handle">@{person.username}</p><p className="profile-bio">{person.bio || 'Movie lover, collecting stories one scene at a time.'}</p></div>
       {!ownProfile && <button className="profile-follow-button" aria-pressed={profile.data.isFollowing} onClick={() => void toggleFollow()}>{person.is_private ? <UserRoundPlus size={16}/> : profile.data.isFollowing ? <UserRoundCheck size={16}/> : <UserRoundPlus size={16}/>} {profile.data.isFollowing ? 'Following' : 'Follow'}</button>}
     </header>
-    <div className="profile-stats">
+    <div className="profile-stats" role="group" aria-label="Profile posts, followers, following, and reviews">
       <button type="button" aria-pressed={tab === 'posts'} className={tab === 'posts' ? 'selected' : ''} onClick={() => setTab('posts')}><b>{profile.data.posts.length}</b><span>Posts</span></button>
       <button type="button" aria-pressed={tab === 'followers'} className={tab === 'followers' ? 'selected' : ''} onClick={() => setTab('followers')}><b>{profile.data.followers}</b><span>Followers</span></button>
       <button type="button" aria-pressed={tab === 'following'} className={tab === 'following' ? 'selected' : ''} onClick={() => setTab('following')}><b>{profile.data.following}</b><span>Following</span></button>
@@ -112,7 +112,7 @@ export default function ProfilePage({ profileId, userId, onBack, onToast, onOpen
     </div>
     {(tab === 'posts' || tab === 'reviews') && <div className="profile-posts">
       <div className="profile-section-title"><Film size={17}/><h2>{tab === 'posts' ? 'Recent posts' : 'Movie reviews'}</h2></div>
-      {tab === 'posts' && profile.data.posts.map((post) => <article className="profile-post" key={post.id}><small>{post.kind} · <time dateTime={post.created_at}>{new Date(post.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</time></small>{post.is_spoiler ? <details><summary>Spoiler — reveal post</summary><p>{post.body}</p></details> : <p>{post.body || 'Shared a photo'}</p>}{post.image_path && supabase && <img className="profile-post-image" src={supabase.storage.from('post-images').getPublicUrl(post.image_path).data.publicUrl} alt="Post attachment" loading="lazy"/>}</article>)}
+      {tab === 'posts' && profile.data.posts.map((post) => <article className="profile-post" key={post.id}><small>{post.kind} · <time dateTime={post.created_at}>{new Date(post.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</time></small>{post.is_spoiler ? <details><summary>Spoiler — reveal post</summary><p>{post.body}</p></details> : <p>{post.body || 'Shared a photo'}</p>}{post.image_path && supabase && <img className="profile-post-image" src={supabase.storage.from('post-images').getPublicUrl(post.image_path).data.publicUrl} alt={`${post.kind} photo attachment`} loading="lazy" decoding="async"/>}</article>)}
       {tab === 'reviews' && profile.data.reviews.map((review) => <article className="profile-post" key={review.id}><small>★ {Number(review.rating).toFixed(1)} · <time dateTime={review.created_at}>{new Date(review.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</time></small>{review.title && <h3>{review.title}</h3>}<p>{review.body}</p></article>)}
       {((tab === 'posts' && !profile.data.posts.length) || (tab === 'reviews' && !profile.data.reviews.length)) && <div className="profile-empty"><Heart size={21}/><b>{tab === 'posts' ? 'No public posts yet.' : 'No reviews yet.'}</b></div>}
     </div>}
