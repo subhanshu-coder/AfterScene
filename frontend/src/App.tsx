@@ -77,7 +77,7 @@ function App() {
   useEffect(() => { if (!movieIdFromPath) setSelectedMovie(null); }, [movieIdFromPath]);
   const openMovie = (movie: Movie) => { setSelectedMovie(movie); navigate(`/movie/${movie.id}`, { state: { from: location.pathname } }); };
   const closeMovie = () => { const from = (location.state as { from?: string } | null)?.from ?? '/'; setSelectedMovie(null); navigate(from, { replace: true }); };
-  const openProfile = (profileId: string) => { setActiveNav('My profile'); setMobileNav(false); navigate(`/profile/${profileId}`, { state: { from: location.pathname } }); };
+  const openProfile = (profileId: string) => { setMobileNav(false); navigate(`/profile/${profileId}`, { state: { from: location.pathname } }); };
 
   const showToast = (message: string) => {
     setToast(message);
