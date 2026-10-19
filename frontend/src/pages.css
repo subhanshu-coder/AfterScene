@@ -33,3 +33,5 @@ body.nav-locked{overflow:hidden;touch-action:none}
 .standalone-profile-shell{min-height:100svh;background:var(--bg);}
 
 .standalone-profile-shell>.profile-page{width:min(100%,1040px);margin:0 auto;padding:clamp(24px,5vw,64px) clamp(18px,5vw,56px);}
+
+.standalone-profile-shell .profile-back{min-height:44px;padding:8px 10px;border-radius:8px;}
