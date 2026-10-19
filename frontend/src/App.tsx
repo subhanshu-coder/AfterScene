@@ -109,7 +109,7 @@ function App() {
 
   if (profileIdFromPath && userId) {
     const from = (location.state as { from?: string } | null)?.from ?? '/';
-    return <main className="standalone-profile-shell"><ProfilePage profileId={profileIdFromPath} userId={userId} onBack={() => navigate(from, { replace: true })} onToast={showToast} onOpenProfile={openProfile} /></main>;
+    return <main className="standalone-profile-shell" aria-label="Member profile"><ProfilePage profileId={profileIdFromPath} userId={userId} onBack={() => navigate(from, { replace: true })} onToast={showToast} onOpenProfile={openProfile} /></main>;
   }
 
   return <div className="app-shell">
