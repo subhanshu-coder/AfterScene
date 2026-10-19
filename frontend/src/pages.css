@@ -31,3 +31,5 @@ body.nav-locked{overflow:hidden;touch-action:none}
 @media(max-width:760px){.movie-space-page{padding-top:18px}.movie-space-tabs button{padding:10px 12px;font-size:14px}}
 
 .standalone-profile-shell{min-height:100svh;background:var(--bg);}
+
+.standalone-profile-shell>.profile-page{width:min(100%,1040px);margin:0 auto;padding:clamp(24px,5vw,64px) clamp(18px,5vw,56px);}
