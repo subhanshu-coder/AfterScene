@@ -29,3 +29,5 @@ body.nav-locked{overflow:hidden;touch-action:none}
 
 .movie-space-page{max-width:1120px;margin:0 auto;padding:26px 0 60px}.movie-space-heading>span{color:var(--lime);font-size:11px;font-weight:750;letter-spacing:.13em}.movie-space-heading h1{margin:7px 0;font-size:clamp(30px,5vw,42px);letter-spacing:-1.3px}.movie-space-heading p{margin:0;color:var(--muted);font-size:15px}.movie-space-tabs{display:flex;gap:7px;overflow-x:auto;margin:20px 0 24px;border-bottom:1px solid var(--line)}.movie-space-tabs button{flex:none;padding:10px 14px;border:0;border-bottom:2px solid transparent;background:transparent;color:var(--muted);font:inherit;cursor:pointer}.movie-space-tabs button[aria-pressed=true]{border-color:var(--lime);color:var(--lime)}.movie-space-page .dna-page,.movie-space-page .library-page{padding-top:0}.home-film-index{margin-top:32px;border-top:1px solid var(--line);padding-top:18px}
 @media(max-width:760px){.movie-space-page{padding-top:18px}.movie-space-tabs button{padding:10px 12px;font-size:14px}}
+
+.standalone-profile-shell{min-height:100svh;background:var(--bg);}
