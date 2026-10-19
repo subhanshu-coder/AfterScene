@@ -108,6 +108,11 @@ function App() {
     }
   }
 
+  if (profileIdFromPath && userId) {
+    const from = (location.state as { from?: string } | null)?.from ?? '/';
+    return <main className="standalone-profile-shell"><ProfilePage profileId={profileIdFromPath} userId={userId} onBack={() => navigate(from, { replace: true })} onToast={showToast} onOpenProfile={openProfile} /></main>;
+  }
+
   return <div className="app-shell">
     <aside className={`sidebar ${mobileNav ? 'sidebar-open' : ''}`}>
       <div className="brand"><span className="brand-mark"><img src="/afterscene-mark.svg" alt="" /></span><span>afterscene<span className="brand-dot">.</span></span><button className="icon-button close-nav" onClick={() => setMobileNav(false)} aria-label="Close menu"><X size={19} /></button></div>
