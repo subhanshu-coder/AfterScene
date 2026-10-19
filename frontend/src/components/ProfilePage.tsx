@@ -91,7 +91,7 @@ export default function ProfilePage({ profileId, userId, onBack, onToast, onOpen
   }
 
   if (profile.isPending) return <section className="profile-page"><p className="community-state" role="status" aria-live="polite">Loading profile…</p></section>;
-  if (profile.isError || !profile.data) return <section className="profile-page"><button className="profile-back" onClick={onBack}><ArrowLeft size={17}/> Back</button><div className="community-error-panel"><b>Profile unavailable</b><span>{profile.error?.message ?? 'This profile could not be loaded.'}</span><button onClick={() => void profile.refetch()}>Try again</button></div></section>;
+  if (profile.isError || !profile.data) return <section className="profile-page"><button className="profile-back" onClick={onBack}><ArrowLeft size={17}/> Back</button><div className="community-error-panel" role="alert"><b>Profile unavailable</b><span>{profile.error?.message ?? 'This profile could not be loaded.'}</span><button onClick={() => void profile.refetch()}>Try again</button></div></section>;
   const person = profile.data.user;
 
   return <section className="profile-page">
