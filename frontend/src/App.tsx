@@ -75,7 +75,6 @@ function App() {
   const routeMovie = useQuery({ queryKey: ['movie-route', movieIdFromPath], enabled: Boolean(movieIdFromPath), queryFn: async ({ signal }) => { const response = await fetch(`${import.meta.env.PROD ? '' : import.meta.env.VITE_API_URL ?? 'http://localhost:4000'}/api/movies/${movieIdFromPath}`, { signal }); if (!response.ok) throw new Error('Movie details could not be loaded.'); const data = await response.json() as Partial<Movie>; return { id: Number(data.id ?? movieIdFromPath), title: data.title ?? 'Movie', overview: data.overview ?? '', poster_path: data.poster_path ?? null, backdrop_path: data.backdrop_path ?? null, release_date: data.release_date ?? '', vote_average: data.vote_average ?? 0, genre_ids: data.genre_ids ?? [] } as Movie; } });
   const profileIdFromPath = location.pathname.match(/^\/profile\/([0-9a-f-]+)$/i)?.[1];
   useEffect(() => { if (!movieIdFromPath) setSelectedMovie(null); }, [movieIdFromPath]);
-  useEffect(() => { if (profileIdFromPath) setActiveNav('My profile'); }, [profileIdFromPath]);
   const openMovie = (movie: Movie) => { setSelectedMovie(movie); navigate(`/movie/${movie.id}`, { state: { from: location.pathname } }); };
   const closeMovie = () => { const from = (location.state as { from?: string } | null)?.from ?? '/'; setSelectedMovie(null); navigate(from, { replace: true }); };
   const openProfile = (profileId: string) => { setActiveNav('My profile'); setMobileNav(false); navigate(`/profile/${profileId}`, { state: { from: location.pathname } }); };
