@@ -50,7 +50,7 @@ export default function SchedulePage({ onOpen }: SchedulePageProps) {
     </div>
     <div className="schedule-results-heading">
       <div><h2>{selected.label} {selectedMedia.label.toLowerCase()} in {year}</h2><span>{selected.hint} · real TMDB data · India-local dates</span></div>
-      {schedule.data && <span className="schedule-result-count">{titleCount} {media === 'movie' ? 'films' : media === 'anime' ? 'anime series' : 'series'}</span>}
+      {schedule.data && <span className="schedule-result-count" aria-live="polite">{titleCount} {media === 'movie' ? 'films' : media === 'anime' ? 'anime series' : 'series'}</span>}
     </div>
     {schedule.isPending && <><p className="community-state" role="status" aria-live="polite">Loading release calendar…</p><div className="schedule-grid">{Array.from({ length: 8 }, (_, index) => <div key={index} className="schedule-skeleton"/>)}</div></>}
     {schedule.isError && <div className="schedule-error" role="alert"><b>Schedule unavailable</b><span>{schedule.error.message}</span><button type="button" onClick={() => void schedule.refetch()}>Try again</button></div>}
