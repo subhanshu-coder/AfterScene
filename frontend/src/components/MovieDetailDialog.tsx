@@ -70,12 +70,6 @@ export default function MovieDetailDialog({ movie, userName, userId, onClose, on
     setWatchStatus(personalState.data?.watchlistStatus ?? null);
   }, [personalState.data]);
 
-  useEffect(() => {
-    const handleKey = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
-  }, [onClose]);
-
   async function replyToReview(reviewId: string, event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!userId || !supabase) return onSignIn();
