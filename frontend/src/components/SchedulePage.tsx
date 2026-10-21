@@ -53,7 +53,7 @@ export default function SchedulePage({ onOpen }: SchedulePageProps) {
       {schedule.data && <span className="schedule-result-count">{titleCount} {media === 'movie' ? 'films' : media === 'anime' ? 'anime series' : 'series'}</span>}
     </div>
     {schedule.isPending && <><p className="community-state" role="status" aria-live="polite">Loading release calendar…</p><div className="schedule-grid">{Array.from({ length: 8 }, (_, index) => <div key={index} className="schedule-skeleton"/>)}</div></>}
-    {schedule.isError && <div className="schedule-error"><b>Schedule unavailable</b><span>{schedule.error.message}</span><button type="button" onClick={() => void schedule.refetch()}>Try again</button></div>}
+    {schedule.isError && <div className="schedule-error" role="alert"><b>Schedule unavailable</b><span>{schedule.error.message}</span><button type="button" onClick={() => void schedule.refetch()}>Try again</button></div>}
     {!schedule.isPending && !schedule.isError && schedule.data?.results.length === 0 && <div className="schedule-empty"><Popcorn size={25}/><b>No {selectedMedia.label.toLowerCase()} listed for this period yet.</b><span>{bucket === 'announced' ? 'TMDB only lists titles with a confirmed release date. Try another year as dates are announced.' : 'Try a different year or release category. New titles appear as TMDB receives date information.'}</span></div>}
     <div className="schedule-grid">{schedule.data?.results.map((title) => {
       const destination = title.media_type === 'tv' || media !== 'movie' ? `https://www.themoviedb.org/tv/${title.id}` : null;
