@@ -145,7 +145,7 @@ export default function MovieDetailDialog({ movie, userName, userId, onClose, on
       <button className="movie-dialog-close" onClick={onClose} aria-label="Close movie details"><X size={19}/></button>
       <div className="movie-dialog-backdrop-image" style={{ backgroundImage: data?.backdrop_path ? `linear-gradient(90deg,#151612 3%,rgba(21,22,18,.82) 49%,rgba(21,22,18,.3)),linear-gradient(0deg,#151612,transparent 54%),url(${backdropBase}${data.backdrop_path})` : undefined }}/>
       <div className="movie-dialog-main">
-        <div className="movie-dialog-poster">{(data?.poster_path ?? movie.poster_path) ? <img src={`${posterBase}${data?.poster_path ?? movie.poster_path}`} alt={`${movieTitle} poster`}/> : <Clapperboard size={30}/>}</div>
+        <div className="movie-dialog-poster">{(data?.poster_path ?? movie.poster_path) ? <img src={`${posterBase}${data?.poster_path ?? movie.poster_path}`} alt={`${movieTitle} poster`} decoding="async"/> : <Clapperboard size={30}/>}</div>
         <div className="movie-dialog-copy">
           <span className="movie-dialog-eyebrow"><Clapperboard size={12}/> THE MOVIE FILE</span>
           <h2 id="movie-dialog-title">{movieTitle}<span>.</span></h2>
