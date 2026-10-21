@@ -42,7 +42,7 @@ export default function SchedulePage({ onOpen }: SchedulePageProps) {
         {Array.from({ length: currentYear - 1999 + 6 }, (_, index) => currentYear + 5 - index).map((option) => <option value={option} key={option}>{option}</option>)}
       </select></label>
     </header>
-    <div className="schedule-media-tabs" role="tablist" aria-label="Title type">
+    <div className="schedule-media-tabs" role="tablist" aria-orientation="horizontal" aria-label="Title type">
       {mediaOptions.map((option) => <button type="button" role="tab" aria-selected={media === option.id} key={option.id} onClick={() => { setMedia(option.id); setPage(1); }}>{option.label}</button>)}
     </div>
     <div className="schedule-tabs" role="tablist" aria-label="Release schedule">
