@@ -58,13 +58,22 @@ export default function ProfilePage({ profileId, userId, onBack, onToast, onOpen
   });
 
   async function toggleFollow() {
-    if (!supabase || !profile.data || ownProfile) return;
-    const result = profile.data.isFollowing
-      ? await supabase.from('follows').delete().eq('follower_id', userId).eq('followed_id', profileId)
-      : await supabase.from('follows').insert({ follower_id: userId, followed_id: profileId });
-    if (result.error) return onToast('Could not update your follow. Please try again.');
-    await client.invalidateQueries({ queryKey: ['profile-page', profileId] });
-    await client.invalidateQueries({ queryKey: ['profile-links', profileId] });
+    if (!supabase || !profile.data || ownProfile || followPending) return;
+    setFollowPending(true);
+    try {
+      const result = profile.data.isFollowing
+        ? await supabase.from('follows').delete().eq('follower_id', userId).eq('followed_id', profileId)
+        : await supabase.from('follows').insert({ follower_id: userId, followed_id: profileId });
+      if (result.error) throw result.error;
+      await Promise.all([
+        client.invalidateQueries({ queryKey: ['profile-page', profileId] }),
+        client.invalidateQueries({ queryKey: ['profile-links', profileId] }),
+      ]);
+    } catch {
+      onToast('Could not update your follow. Please try again.');
+    } finally {
+      setFollowPending(false);
+    }
   }
 
   async function uploadAvatar(file?: File) {
