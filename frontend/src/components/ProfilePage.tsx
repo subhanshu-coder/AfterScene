@@ -20,18 +20,24 @@ export default function ProfilePage({ profileId, userId, onBack, onToast, onOpen
     enabled: Boolean(supabase),
     queryFn: async () => {
       if (!supabase) throw new Error('Profile service is not configured.');
-      const [{ data: user, error: userError }, { data: posts, error: postsError }, { data: reviews, error: reviewsError }, { count: followers, error: followersError }, { count: following, error: followingError }, { data: follow, error: followError }] = await Promise.all([
+      const [{ data: user, error: userError }, followResult] = await Promise.all([
         supabase.from('profiles').select('id,username,display_name,bio,avatar_url,is_private').eq('id', profileId).single(),
-        supabase.from('posts').select('id,kind,body,is_spoiler,image_path,created_at').eq('author_id', profileId).order('created_at', { ascending: false }).limit(50),
-        supabase.from('reviews').select('id,title,body,rating,created_at,movie_id').eq('author_id', profileId).order('created_at', { ascending: false }).limit(50),
-        supabase.from('follows').select('follower_id', { count: 'exact', head: true }).eq('followed_id', profileId),
-        supabase.from('follows').select('followed_id', { count: 'exact', head: true }).eq('follower_id', profileId),
         !ownProfile ? supabase.from('follows').select('followed_id').eq('follower_id', userId).eq('followed_id', profileId).maybeSingle() : Promise.resolve({ data: null, error: null }),
       ]);
-      const error = userError ?? postsError ?? reviewsError ?? followersError ?? followingError ?? followError;
+      const error = userError ?? followResult.error;
       if (error) throw new Error(error.message || 'This profile could not be loaded.');
       if (!user) throw new Error('This profile is not available.');
-      return { user: user as Profile, posts: (posts ?? []) as ProfilePost[], reviews: (reviews ?? []) as ProfileReview[], followers: followers ?? 0, following: following ?? 0, isFollowing: Boolean(follow) };
+      const isFollowing = Boolean(followResult.data);
+      const canViewContent = ownProfile || !user.is_private || isFollowing;
+      const [postsResult, reviewsResult, followersResult, followingResult] = await Promise.all([
+        canViewContent ? supabase.from('posts').select('id,kind,body,is_spoiler,image_path,created_at').eq('author_id', profileId).order('created_at', { ascending: false }).limit(50) : Promise.resolve({ data: [], error: null }),
+        canViewContent ? supabase.from('reviews').select('id,title,body,rating,created_at,movie_id').eq('author_id', profileId).order('created_at', { ascending: false }).limit(50) : Promise.resolve({ data: [], error: null }),
+        supabase.from('follows').select('follower_id', { count: 'exact', head: true }).eq('followed_id', profileId),
+        supabase.from('follows').select('followed_id', { count: 'exact', head: true }).eq('follower_id', profileId),
+      ]);
+      const contentError = postsResult.error ?? reviewsResult.error ?? followersResult.error ?? followingResult.error;
+      if (contentError) throw new Error(contentError.message || 'This profile could not be loaded.');
+      return { user: user as Profile, posts: (postsResult.data ?? []) as ProfilePost[], reviews: (reviewsResult.data ?? []) as ProfileReview[], followers: followersResult.count ?? 0, following: followingResult.count ?? 0, isFollowing, canViewContent };
     },
   });
   const linkedProfiles = useQuery({
@@ -112,9 +118,10 @@ export default function ProfilePage({ profileId, userId, onBack, onToast, onOpen
     </div>
     {(tab === 'posts' || tab === 'reviews') && <div className="profile-posts">
       <div className="profile-section-title"><Film size={17}/><h2>{tab === 'posts' ? 'Recent posts' : 'Movie reviews'}</h2></div>
-      {tab === 'posts' && profile.data.posts.map((post) => <article className="profile-post" key={post.id}><small>{post.kind} · <time dateTime={post.created_at}>{new Date(post.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</time></small>{post.is_spoiler ? <details><summary>Spoiler — reveal post</summary><p>{post.body}</p></details> : <p>{post.body || 'Shared a photo'}</p>}{post.image_path && supabase && <img className="profile-post-image" src={supabase.storage.from('post-images').getPublicUrl(post.image_path).data.publicUrl} alt={`${post.kind} photo attachment`} loading="lazy" decoding="async"/>}</article>)}
-      {tab === 'reviews' && profile.data.reviews.map((review) => <article className="profile-post" key={review.id}><small>★ {Number(review.rating).toFixed(1)} · <time dateTime={review.created_at}>{new Date(review.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</time></small>{review.title && <h3>{review.title}</h3>}<p>{review.body}</p></article>)}
-      {((tab === 'posts' && !profile.data.posts.length) || (tab === 'reviews' && !profile.data.reviews.length)) && <div className="profile-empty"><Heart size={21}/><b>{tab === 'posts' ? 'No public posts yet.' : 'No reviews yet.'}</b></div>}
+      {!profile.data.canViewContent && <div className="profile-empty" role="status"><Heart size={21}/><b>This account is private.</b><span>Follow this member to see their posts and reviews.</span></div>}
+      {profile.data.canViewContent && tab === 'posts' && profile.data.posts.map((post) => <article className="profile-post" key={post.id}><small>{post.kind} · <time dateTime={post.created_at}>{new Date(post.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</time></small>{post.is_spoiler ? <details><summary>Spoiler — reveal post</summary><p>{post.body}</p></details> : <p>{post.body || 'Shared a photo'}</p>}{post.image_path && supabase && <img className="profile-post-image" src={supabase.storage.from('post-images').getPublicUrl(post.image_path).data.publicUrl} alt={`${post.kind} photo attachment`} loading="lazy" decoding="async"/>}</article>)}
+      {profile.data.canViewContent && tab === 'reviews' && profile.data.reviews.map((review) => <article className="profile-post" key={review.id}><small>★ {Number(review.rating).toFixed(1)} · <time dateTime={review.created_at}>{new Date(review.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</time></small>{review.title && <h3>{review.title}</h3>}<p>{review.body}</p></article>)}
+      {profile.data.canViewContent && ((tab === 'posts' && !profile.data.posts.length) || (tab === 'reviews' && !profile.data.reviews.length)) && <div className="profile-empty"><Heart size={21}/><b>{tab === 'posts' ? 'No public posts yet.' : 'No reviews yet.'}</b></div>}
     </div>}
     {(tab === 'followers' || tab === 'following') && <div className="profile-posts"><div className="profile-section-title"><Heart size={17}/><h2>{tab === 'followers' ? 'Followers' : 'Following'}</h2></div>{linkedProfiles.isPending && <p className="community-state">Loading people…</p>}{linkedProfiles.isError && <p className="community-state community-error">{linkedProfiles.error.message}</p>}{!linkedProfiles.isPending && !linkedProfiles.data?.length && <div className="profile-empty"><Heart size={21}/><b>No {tab} yet.</b></div>}{linkedProfiles.data?.map((link) => <button className="profile-link-row" key={link.id} onClick={() => onOpenProfile(link.id)}><span>{link.avatar_url ? <img src={avatarUrl(link.avatar_url) ?? ''} alt=""/> : link.display_name.slice(0, 1).toUpperCase()}</span><b>{link.display_name}</b><small>@{link.username}</small></button>)}</div>}
   </section>;
