@@ -69,6 +69,7 @@ export default function ProfilePage({ profileId, userId, onBack, onToast, onOpen
         client.invalidateQueries({ queryKey: ['profile-page', profileId] }),
         client.invalidateQueries({ queryKey: ['profile-links', profileId] }),
       ]);
+      onToast(profile.data.isFollowing ? 'You unfollowed this member.' : 'You are now following this member.');
     } catch {
       onToast('Could not update your follow. Please try again.');
     } finally {
