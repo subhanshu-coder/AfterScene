@@ -37,7 +37,7 @@ export default function ProfilePage({ profileId, userId, onBack, onToast, onOpen
       ]);
       const contentError = postsResult.error ?? reviewsResult.error ?? followersResult.error ?? followingResult.error;
       if (contentError) throw new Error(contentError.message || 'This profile could not be loaded.');
-      return { user: user as Profile, posts: (postsResult.data ?? []) as ProfilePost[], reviews: (reviewsResult.data ?? []) as ProfileReview[], followers: followersResult.count ?? 0, following: followingResult.count ?? 0, isFollowing, canViewContent };
+      return { user: user as Profile, posts: (postsResult.data ?? []) as ProfilePost[], reviews: (reviewsResult.data ?? []) as ProfileReview[], postsCount: postsResult.count ?? 0, reviewsCount: reviewsResult.count ?? 0, followers: followersResult.count ?? 0, following: followingResult.count ?? 0, isFollowing, canViewContent };
     },
   });
   const linkedProfiles = useQuery({
