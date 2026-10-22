@@ -111,7 +111,7 @@ export default function ProfilePage({ profileId, userId, onBack, onToast, onOpen
       {!ownProfile && <button className="profile-follow-button" aria-pressed={profile.data.isFollowing} onClick={() => void toggleFollow()}>{person.is_private ? <UserRoundPlus size={16}/> : profile.data.isFollowing ? <UserRoundCheck size={16}/> : <UserRoundPlus size={16}/>} {profile.data.isFollowing ? 'Following' : 'Follow'}</button>}
     </header>
     <div className="profile-stats" role="group" aria-label="Profile posts, followers, following, and reviews">
-      <button type="button" aria-pressed={tab === 'posts'} className={tab === 'posts' ? 'selected' : ''} onClick={() => setTab('posts')}><b>{profile.data.posts.length}</b><span>Posts</span></button>
+      <button type="button" aria-pressed={tab === 'posts'} className={tab === 'posts' ? 'selected' : ''} onClick={() => setTab('posts')}><b>{profile.data.postsCount}</b><span>Posts</span></button>
       <button type="button" aria-pressed={tab === 'followers'} className={tab === 'followers' ? 'selected' : ''} onClick={() => setTab('followers')}><b>{profile.data.followers}</b><span>Followers</span></button>
       <button type="button" aria-pressed={tab === 'following'} className={tab === 'following' ? 'selected' : ''} onClick={() => setTab('following')}><b>{profile.data.following}</b><span>Following</span></button>
       <button type="button" aria-pressed={tab === 'reviews'} className={tab === 'reviews' ? 'selected' : ''} onClick={() => setTab('reviews')}><b>{profile.data.reviews.length}</b><span>Reviews</span></button>
