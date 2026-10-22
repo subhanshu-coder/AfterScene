@@ -110,11 +110,11 @@ export default function ProfilePage({ profileId, userId, onBack, onToast, onOpen
       <div className="profile-hero-copy"><span className="profile-kicker">{ownProfile ? 'YOUR FILM IDENTITY' : 'AFTERSCENE MEMBER'}</span><h1>{person.display_name}</h1><p className="profile-handle">@{person.username}</p><p className="profile-bio">{person.bio || 'Movie lover, collecting stories one scene at a time.'}</p></div>
       {!ownProfile && <button className="profile-follow-button" aria-pressed={profile.data.isFollowing} onClick={() => void toggleFollow()}>{person.is_private ? <UserRoundPlus size={16}/> : profile.data.isFollowing ? <UserRoundCheck size={16}/> : <UserRoundPlus size={16}/>} {profile.data.isFollowing ? 'Following' : 'Follow'}</button>}
     </header>
-    <div className="profile-stats" role="group" aria-label="Profile posts, followers, following, and reviews">
-      <button type="button" aria-pressed={tab === 'posts'} className={tab === 'posts' ? 'selected' : ''} onClick={() => setTab('posts')}><b>{profile.data.postsCount}</b><span>Posts</span></button>
-      <button type="button" aria-pressed={tab === 'followers'} className={tab === 'followers' ? 'selected' : ''} onClick={() => setTab('followers')}><b>{profile.data.followers}</b><span>Followers</span></button>
-      <button type="button" aria-pressed={tab === 'following'} className={tab === 'following' ? 'selected' : ''} onClick={() => setTab('following')}><b>{profile.data.following}</b><span>Following</span></button>
-      <button type="button" aria-pressed={tab === 'reviews'} className={tab === 'reviews' ? 'selected' : ''} onClick={() => setTab('reviews')}><b>{profile.data.reviewsCount}</b><span>Reviews</span></button>
+    <div className="profile-stats" role="tablist" aria-label="Profile sections">
+      <button type="button" role="tab" aria-selected={tab === 'posts'} className={tab === 'posts' ? 'selected' : ''} onClick={() => setTab('posts')}><b>{profile.data.postsCount}</b><span>Posts</span></button>
+      <button type="button" role="tab" aria-selected={tab === 'followers'} className={tab === 'followers' ? 'selected' : ''} onClick={() => setTab('followers')}><b>{profile.data.followers}</b><span>Followers</span></button>
+      <button type="button" role="tab" aria-selected={tab === 'following'} className={tab === 'following' ? 'selected' : ''} onClick={() => setTab('following')}><b>{profile.data.following}</b><span>Following</span></button>
+      <button type="button" role="tab" aria-selected={tab === 'reviews'} className={tab === 'reviews' ? 'selected' : ''} onClick={() => setTab('reviews')}><b>{profile.data.reviewsCount}</b><span>Reviews</span></button>
     </div>
     {(tab === 'posts' || tab === 'reviews') && <div className="profile-posts">
       <div className="profile-section-title"><Film size={17}/><h2>{tab === 'posts' ? 'Recent posts' : 'Movie reviews'}</h2></div>
