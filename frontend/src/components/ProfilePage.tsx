@@ -14,6 +14,7 @@ export default function ProfilePage({ profileId, userId, onBack, onToast, onOpen
   const client = useQueryClient();
   const [tab, setTab] = useState<'posts' | 'reviews' | 'followers' | 'following'>('posts');
   const [uploading, setUploading] = useState(false);
+  const [followPending, setFollowPending] = useState(false);
   const ownProfile = profileId === userId;
   const profile = useQuery({
     queryKey: ['profile-page', profileId, userId],
@@ -30,14 +31,14 @@ export default function ProfilePage({ profileId, userId, onBack, onToast, onOpen
       const isFollowing = Boolean(followResult.data);
       const canViewContent = ownProfile || !user.is_private || isFollowing;
       const [postsResult, reviewsResult, followersResult, followingResult] = await Promise.all([
-        canViewContent ? supabase.from('posts').select('id,kind,body,is_spoiler,image_path,created_at').eq('author_id', profileId).order('created_at', { ascending: false }).limit(50) : Promise.resolve({ data: [], error: null }),
-        canViewContent ? supabase.from('reviews').select('id,title,body,rating,created_at,movie_id').eq('author_id', profileId).order('created_at', { ascending: false }).limit(50) : Promise.resolve({ data: [], error: null }),
+        canViewContent ? supabase.from('posts').select('id,kind,body,is_spoiler,image_path,created_at', { count: 'exact' }).eq('author_id', profileId).order('created_at', { ascending: false }).limit(50) : Promise.resolve({ data: [], count: 0, error: null }),
+        canViewContent ? supabase.from('reviews').select('id,title,body,rating,created_at,movie_id', { count: 'exact' }).eq('author_id', profileId).order('created_at', { ascending: false }).limit(50) : Promise.resolve({ data: [], count: 0, error: null }),
         supabase.from('follows').select('follower_id', { count: 'exact', head: true }).eq('followed_id', profileId),
         supabase.from('follows').select('followed_id', { count: 'exact', head: true }).eq('follower_id', profileId),
       ]);
       const contentError = postsResult.error ?? reviewsResult.error ?? followersResult.error ?? followingResult.error;
       if (contentError) throw new Error(contentError.message || 'This profile could not be loaded.');
-      return { user: user as Profile, posts: (postsResult.data ?? []) as ProfilePost[], reviews: (reviewsResult.data ?? []) as ProfileReview[], followers: followersResult.count ?? 0, following: followingResult.count ?? 0, isFollowing, canViewContent };
+      return { user: user as Profile, posts: (postsResult.data ?? []) as ProfilePost[], reviews: (reviewsResult.data ?? []) as ProfileReview[], postsCount: postsResult.count ?? 0, reviewsCount: reviewsResult.count ?? 0, followers: followersResult.count ?? 0, following: followingResult.count ?? 0, isFollowing, canViewContent };
     },
   });
   const linkedProfiles = useQuery({
@@ -58,13 +59,23 @@ export default function ProfilePage({ profileId, userId, onBack, onToast, onOpen
   });
 
   async function toggleFollow() {
-    if (!supabase || !profile.data || ownProfile) return;
-    const result = profile.data.isFollowing
-      ? await supabase.from('follows').delete().eq('follower_id', userId).eq('followed_id', profileId)
-      : await supabase.from('follows').insert({ follower_id: userId, followed_id: profileId });
-    if (result.error) return onToast('Could not update your follow. Please try again.');
-    await client.invalidateQueries({ queryKey: ['profile-page', profileId] });
-    await client.invalidateQueries({ queryKey: ['profile-links', profileId] });
+    if (!supabase || !profile.data || ownProfile || followPending) return;
+    setFollowPending(true);
+    try {
+      const result = profile.data.isFollowing
+        ? await supabase.from('follows').delete().eq('follower_id', userId).eq('followed_id', profileId)
+        : await supabase.from('follows').insert({ follower_id: userId, followed_id: profileId });
+      if (result.error) throw result.error;
+      await Promise.all([
+        client.invalidateQueries({ queryKey: ['profile-page', profileId] }),
+        client.invalidateQueries({ queryKey: ['profile-links', profileId] }),
+      ]);
+      onToast(profile.data.isFollowing ? 'You unfollowed this member.' : 'You are now following this member.');
+    } catch {
+      onToast('Could not update your follow. Please try again.');
+    } finally {
+      setFollowPending(false);
+    }
   }
 
   async function uploadAvatar(file?: File) {
@@ -87,7 +98,7 @@ export default function ProfilePage({ profileId, userId, onBack, onToast, onOpen
       const { data: saved, error: verifyError } = await supabase.from('profiles').select('avatar_url').eq('id', userId).single();
       if (verifyError || saved?.avatar_url !== objectPath) throw verifyError ?? new Error('The profile photo did not save.');
       await client.invalidateQueries({ queryKey: ['profile-page', profileId] });
-      await client.invalidateQueries({ queryKey: ['my-profile', userId] });
+      await Promise.all([client.invalidateQueries({ queryKey: ['my-profile', userId] }), client.invalidateQueries({ queryKey: ['account-avatar', userId] })]);
       onToast('Profile photo updated.');
     } catch {
       onToast('Could not save your profile photo. Check the avatar storage setup and try again.');
@@ -99,22 +110,23 @@ export default function ProfilePage({ profileId, userId, onBack, onToast, onOpen
   if (profile.isPending) return <section className="profile-page"><p className="community-state" role="status" aria-live="polite">Loading profile…</p></section>;
   if (profile.isError || !profile.data) return <section className="profile-page"><button className="profile-back" onClick={onBack}><ArrowLeft size={17}/> Back</button><div className="community-error-panel" role="alert"><b>Profile unavailable</b><span>{profile.error?.message ?? 'This profile could not be loaded.'}</span><button onClick={() => void profile.refetch()}>Try again</button></div></section>;
   const person = profile.data.user;
+  const displayName = person.display_name || person.username || 'Movie lover';
 
   return <section className="profile-page">
     <button className="profile-back" onClick={onBack}><ArrowLeft size={17}/> Back to {ownProfile ? 'home' : 'community'}</button>
     <header className="profile-hero">
       <div className="profile-avatar-wrap">
-        <span className="profile-page-avatar">{person.avatar_url ? <img src={avatarUrl(person.avatar_url) ?? ''} alt={`${person.display_name}'s profile`} loading="lazy" decoding="async" /> : person.display_name.slice(0, 1).toUpperCase()}</span>
-        {ownProfile && <label className="profile-avatar-upload" aria-label="Upload profile photo">{uploading ? <LoaderCircle className="spinning" size={17}/> : <Camera size={17}/>}<input type="file" accept="image/jpeg,image/png,image/webp" disabled={uploading} onChange={(event) => { void uploadAvatar(event.target.files?.[0]); event.currentTarget.value = ''; }}/></label>}
+        <span className="profile-page-avatar">{person.avatar_url ? <img src={avatarUrl(person.avatar_url) ?? ''} alt={`${displayName}'s profile`} loading="lazy" decoding="async" /> : person.display_name.slice(0, 1).toUpperCase()}</span>
+        {ownProfile && <label className="profile-avatar-upload" aria-label={uploading ? "Uploading profile photo" : "Upload profile photo"} aria-busy={uploading}>{uploading ? <LoaderCircle className="spinning" size={17}/> : <Camera size={17}/>}<input type="file" accept="image/jpeg,image/png,image/webp" disabled={uploading} onChange={(event) => { void uploadAvatar(event.target.files?.[0]); event.currentTarget.value = ''; }}/></label>}
       </div>
-      <div className="profile-hero-copy"><span className="profile-kicker">{ownProfile ? 'YOUR FILM IDENTITY' : 'AFTERSCENE MEMBER'}</span><h1>{person.display_name}</h1><p className="profile-handle">@{person.username}</p><p className="profile-bio">{person.bio || 'Movie lover, collecting stories one scene at a time.'}</p></div>
-      {!ownProfile && <button className="profile-follow-button" aria-pressed={profile.data.isFollowing} onClick={() => void toggleFollow()}>{person.is_private ? <UserRoundPlus size={16}/> : profile.data.isFollowing ? <UserRoundCheck size={16}/> : <UserRoundPlus size={16}/>} {profile.data.isFollowing ? 'Following' : 'Follow'}</button>}
+      <div className="profile-hero-copy"><span className="profile-kicker">{ownProfile ? 'YOUR FILM IDENTITY' : 'AFTERSCENE MEMBER'}</span><h1>{displayName}</h1><p className="profile-handle">@{person.username}</p><p className="profile-bio">{person.bio || 'Movie lover, collecting stories one scene at a time.'}</p></div>
+      {!ownProfile && <button className="profile-follow-button" aria-pressed={profile.data.isFollowing} aria-busy={followPending} disabled={followPending} onClick={() => void toggleFollow()}>{person.is_private ? <UserRoundPlus size={16}/> : profile.data.isFollowing ? <UserRoundCheck size={16}/> : <UserRoundPlus size={16}/>} {profile.data.isFollowing ? 'Following' : 'Follow'}</button>}
     </header>
-    <div className="profile-stats" role="group" aria-label="Profile posts, followers, following, and reviews">
-      <button type="button" aria-pressed={tab === 'posts'} className={tab === 'posts' ? 'selected' : ''} onClick={() => setTab('posts')}><b>{profile.data.posts.length}</b><span>Posts</span></button>
-      <button type="button" aria-pressed={tab === 'followers'} className={tab === 'followers' ? 'selected' : ''} onClick={() => setTab('followers')}><b>{profile.data.followers}</b><span>Followers</span></button>
-      <button type="button" aria-pressed={tab === 'following'} className={tab === 'following' ? 'selected' : ''} onClick={() => setTab('following')}><b>{profile.data.following}</b><span>Following</span></button>
-      <button type="button" aria-pressed={tab === 'reviews'} className={tab === 'reviews' ? 'selected' : ''} onClick={() => setTab('reviews')}><b>{profile.data.reviews.length}</b><span>Reviews</span></button>
+    <div className="profile-stats" role="tablist" aria-label="Profile sections">
+      <button type="button" role="tab" aria-selected={tab === 'posts'} className={tab === 'posts' ? 'selected' : ''} onClick={() => setTab('posts')}><b>{profile.data.postsCount}</b><span>Posts</span></button>
+      <button type="button" role="tab" aria-selected={tab === 'followers'} className={tab === 'followers' ? 'selected' : ''} onClick={() => setTab('followers')}><b>{profile.data.followers}</b><span>Followers</span></button>
+      <button type="button" role="tab" aria-selected={tab === 'following'} className={tab === 'following' ? 'selected' : ''} onClick={() => setTab('following')}><b>{profile.data.following}</b><span>Following</span></button>
+      <button type="button" role="tab" aria-selected={tab === 'reviews'} className={tab === 'reviews' ? 'selected' : ''} onClick={() => setTab('reviews')}><b>{profile.data.reviewsCount}</b><span>Reviews</span></button>
     </div>
     {(tab === 'posts' || tab === 'reviews') && <div className="profile-posts">
       <div className="profile-section-title"><Film size={17}/><h2>{tab === 'posts' ? 'Recent posts' : 'Movie reviews'}</h2></div>
@@ -123,7 +135,7 @@ export default function ProfilePage({ profileId, userId, onBack, onToast, onOpen
       {profile.data.canViewContent && tab === 'reviews' && profile.data.reviews.map((review) => <article className="profile-post" key={review.id}><small>★ {Number(review.rating).toFixed(1)} · <time dateTime={review.created_at}>{new Date(review.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</time></small>{review.title && <h3>{review.title}</h3>}<p>{review.body}</p></article>)}
       {profile.data.canViewContent && ((tab === 'posts' && !profile.data.posts.length) || (tab === 'reviews' && !profile.data.reviews.length)) && <div className="profile-empty"><Heart size={21}/><b>{tab === 'posts' ? 'No public posts yet.' : 'No reviews yet.'}</b></div>}
     </div>}
-    {(tab === 'followers' || tab === 'following') && <div className="profile-posts"><div className="profile-section-title"><Heart size={17}/><h2>{tab === 'followers' ? 'Followers' : 'Following'}</h2></div>{linkedProfiles.isPending && <p className="community-state">Loading people…</p>}{linkedProfiles.isError && <p className="community-state community-error">{linkedProfiles.error.message}</p>}{!linkedProfiles.isPending && !linkedProfiles.data?.length && <div className="profile-empty"><Heart size={21}/><b>No {tab} yet.</b></div>}{linkedProfiles.data?.map((link) => <button className="profile-link-row" key={link.id} onClick={() => onOpenProfile(link.id)}><span>{link.avatar_url ? <img src={avatarUrl(link.avatar_url) ?? ''} alt=""/> : link.display_name.slice(0, 1).toUpperCase()}</span><b>{link.display_name}</b><small>@{link.username}</small></button>)}</div>}
+    {(tab === 'followers' || tab === 'following') && <div className="profile-posts"><div className="profile-section-title"><Heart size={17}/><h2>{tab === 'followers' ? 'Followers' : 'Following'}</h2></div>{linkedProfiles.isPending && <p className="community-state">Loading people…</p>}{linkedProfiles.isError && <div className="community-state community-error" role="alert">{linkedProfiles.error.message}<button onClick={() => void linkedProfiles.refetch()}>Try again</button></div>}{!linkedProfiles.isPending && !linkedProfiles.data?.length && <div className="profile-empty"><Heart size={21}/><b>No {tab} yet.</b></div>}{linkedProfiles.data?.map((link) => <button className="profile-link-row" key={link.id} aria-label={`Open ${link.display_name} profile`} onClick={() => onOpenProfile(link.id)}><span>{link.avatar_url ? <img src={avatarUrl(link.avatar_url) ?? ''} alt=""/> : link.display_name.slice(0, 1).toUpperCase()}</span><b>{link.display_name}</b><small>@{link.username}</small></button>)}</div>}
   </section>;
 }
 
