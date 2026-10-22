@@ -13,7 +13,8 @@ type LinkProfile = Pick<Profile, 'id' | 'username' | 'display_name' | 'avatar_ur
 export default function ProfilePage({ profileId, userId, onBack, onToast, onOpenProfile }: Props) {
   const client = useQueryClient();
   const [tab, setTab] = useState<'posts' | 'reviews' | 'followers' | 'following'>('posts');
-  const [uploading, setUploading] = useState(false);\n  const [followPending, setFollowPending] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [followPending, setFollowPending] = useState(false);
   const ownProfile = profileId === userId;
   const profile = useQuery({
     queryKey: ['profile-page', profileId, userId],
