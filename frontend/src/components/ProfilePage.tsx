@@ -109,15 +109,16 @@ export default function ProfilePage({ profileId, userId, onBack, onToast, onOpen
   if (profile.isPending) return <section className="profile-page"><p className="community-state" role="status" aria-live="polite">Loading profile…</p></section>;
   if (profile.isError || !profile.data) return <section className="profile-page"><button className="profile-back" onClick={onBack}><ArrowLeft size={17}/> Back</button><div className="community-error-panel" role="alert"><b>Profile unavailable</b><span>{profile.error?.message ?? 'This profile could not be loaded.'}</span><button onClick={() => void profile.refetch()}>Try again</button></div></section>;
   const person = profile.data.user;
+  const displayName = person.display_name || person.username || 'Movie lover';
 
   return <section className="profile-page">
     <button className="profile-back" onClick={onBack}><ArrowLeft size={17}/> Back to {ownProfile ? 'home' : 'community'}</button>
     <header className="profile-hero">
       <div className="profile-avatar-wrap">
-        <span className="profile-page-avatar">{person.avatar_url ? <img src={avatarUrl(person.avatar_url) ?? ''} alt={`${person.display_name}'s profile`} loading="lazy" decoding="async" /> : person.display_name.slice(0, 1).toUpperCase()}</span>
+        <span className="profile-page-avatar">{person.avatar_url ? <img src={avatarUrl(person.avatar_url) ?? ''} alt={`${displayName}'s profile`} loading="lazy" decoding="async" /> : person.display_name.slice(0, 1).toUpperCase()}</span>
         {ownProfile && <label className="profile-avatar-upload" aria-label={uploading ? "Uploading profile photo" : "Upload profile photo"} aria-busy={uploading}>{uploading ? <LoaderCircle className="spinning" size={17}/> : <Camera size={17}/>}<input type="file" accept="image/jpeg,image/png,image/webp" disabled={uploading} onChange={(event) => { void uploadAvatar(event.target.files?.[0]); event.currentTarget.value = ''; }}/></label>}
       </div>
-      <div className="profile-hero-copy"><span className="profile-kicker">{ownProfile ? 'YOUR FILM IDENTITY' : 'AFTERSCENE MEMBER'}</span><h1>{person.display_name}</h1><p className="profile-handle">@{person.username}</p><p className="profile-bio">{person.bio || 'Movie lover, collecting stories one scene at a time.'}</p></div>
+      <div className="profile-hero-copy"><span className="profile-kicker">{ownProfile ? 'YOUR FILM IDENTITY' : 'AFTERSCENE MEMBER'}</span><h1>{displayName}</h1><p className="profile-handle">@{person.username}</p><p className="profile-bio">{person.bio || 'Movie lover, collecting stories one scene at a time.'}</p></div>
       {!ownProfile && <button className="profile-follow-button" aria-pressed={profile.data.isFollowing} aria-busy={followPending} disabled={followPending} onClick={() => void toggleFollow()}>{person.is_private ? <UserRoundPlus size={16}/> : profile.data.isFollowing ? <UserRoundCheck size={16}/> : <UserRoundPlus size={16}/>} {profile.data.isFollowing ? 'Following' : 'Follow'}</button>}
     </header>
     <div className="profile-stats" role="tablist" aria-label="Profile sections">
