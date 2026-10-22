@@ -97,7 +97,7 @@ export default function ProfilePage({ profileId, userId, onBack, onToast, onOpen
       const { data: saved, error: verifyError } = await supabase.from('profiles').select('avatar_url').eq('id', userId).single();
       if (verifyError || saved?.avatar_url !== objectPath) throw verifyError ?? new Error('The profile photo did not save.');
       await client.invalidateQueries({ queryKey: ['profile-page', profileId] });
-      await client.invalidateQueries({ queryKey: ['my-profile', userId] });
+      await Promise.all([client.invalidateQueries({ queryKey: ['my-profile', userId] }), client.invalidateQueries({ queryKey: ['account-avatar', userId] })]);
       onToast('Profile photo updated.');
     } catch {
       onToast('Could not save your profile photo. Check the avatar storage setup and try again.');
