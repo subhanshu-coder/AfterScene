@@ -26,7 +26,7 @@ async function getTasteData(userId: string) {
   const historyIds = new Set((history.data ?? []).map((entry) => entry.movie_id));
   const watchIds = new Set((watchlist.data ?? []).map((entry) => entry.movie_id));
   const tasteMovies = (movies.data ?? []).map((movie) => {
-    const rating = ratingMap.get(movie.id) ?? (history.data ?? []).find((entry) => entry.movie_id === movie.id)?.rating ?? null;
+    const rating = ratingMap.get(movie.id) ?? historyRatingMap.get(movie.id) ?? null;
     return { ...movie, genres: movie.genres ?? [], metadata: (movie.metadata ?? {}) as Record<string, unknown>, rating: rating === null ? null : Number(rating), weight: rating !== null ? 1 + Number(rating) / 5 : historyIds.has(movie.id) ? 0.7 : watchIds.has(movie.id) ? 0.3 : 0 };
   }).filter((movie) => movie.weight > 0) as TasteMovie[];
   const ratingValues = [...ratingMap.values()];
