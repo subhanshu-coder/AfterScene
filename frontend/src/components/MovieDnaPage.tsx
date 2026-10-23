@@ -72,5 +72,5 @@ export default function MovieDnaPage({ userId }: { userId: string | null }) {
 }
 
 function TraitCard({ title, icon, items }: { title: string; icon: ReactNode; items: { label: string; share: number }[] }) {
-  return <article className="dna-trait-card"><h2>{icon}{title}</h2>{items.length ? items.map((item) => <div className="dna-bar-row" key={item.label}><div><span>{item.label}</span><b>{item.share}%</b></div><span className="dna-bar"><i style={{ width: `${item.share}%` }}/></span></div>) : <p className="dna-no-data">Add more film history to reveal this.</p>}</article>;
+  return <article className="dna-trait-card"><h2>{icon}{title}</h2>{items.length ? items.map((item) => <div className="dna-bar-row" key={item.label}><div><span>{item.label}</span><b>{item.share}%</b></div><span className="dna-bar" role="progressbar" aria-label={`${item.label} share`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={item.share}><i style={{ width: `${item.share}%` }}/></span></div>) : <p className="dna-no-data">Add more film history to reveal this.</p>}</article>;
 }
