@@ -56,7 +56,7 @@ export default function MovieDnaPage({ userId }: { userId: string | null }) {
       const credits = movie.metadata.credits as { crew?: { job?: string; name?: string }[]; cast?: { name?: string }[] } | undefined;
       const director = credits?.crew?.find((person) => person.job?.toLowerCase() === 'director')?.name?.trim();
       if (director) directors.set(director, (directors.get(director) ?? 0) + movie.weight);
-      for (const actor of credits?.cast?.slice(0,3) ?? []) if (actor.name) actors.set(actor.name, (actors.get(actor.name) ?? 0) + movie.weight);
+      for (const actor of credits?.cast?.slice(0,3) ?? []) if (actor.name?.trim()) actors.set(actor.name.trim(), (actors.get(actor.name.trim()) ?? 0) + movie.weight);
     }
     return { genres: ranked(genreCounts), decades: ranked(decades,3), languages: ranked(languages,4), directors: ranked(directors,4), actors: ranked(actors,4) };
   }, [query.data]);
