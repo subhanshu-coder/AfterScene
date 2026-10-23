@@ -49,8 +49,8 @@ export default function MovieDnaPage({ userId }: { userId: string | null }) {
         const name = genreNames[genreId] ?? 'Other';
         genreCounts.set(name, (genreCounts.get(name) ?? 0) + movie.weight);
       }
-      const year = Number(movie.release_date?.slice(0,4));
-      if (year) { const decade = `${Math.floor(year / 10) * 10}s`; decades.set(decade, (decades.get(decade) ?? 0) + movie.weight); }
+      const year = Number.parseInt(movie.release_date?.slice(0, 4) ?? '', 10);
+      if (Number.isInteger(year) && year >= 1888 && year <= 3000) { const decade = `${Math.floor(year / 10) * 10}s`; decades.set(decade, (decades.get(decade) ?? 0) + movie.weight); }
       const language = String(movie.metadata.original_language ?? '').toUpperCase();
       if (language) languages.set(language, (languages.get(language) ?? 0) + movie.weight);
       const credits = movie.metadata.credits as { crew?: { job?: string; name?: string }[]; cast?: { name?: string }[] } | undefined;
