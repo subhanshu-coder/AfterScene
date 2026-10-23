@@ -37,7 +37,7 @@ async function getTasteData(userId: string) {
 
 function ranked(counts: Map<string, number>, limit = 5) {
   const total = [...counts.values()].reduce((sum, value) => sum + value, 0);
-  return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, limit).map(([label, value]) => ({ label, share: total ? Math.round(value / total * 100) : 0 }));
+  return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, limit).map(([label, value]) => ({ label, share: total ? Math.round(value / total * 100) : 0 }));
 }
 
 export default function MovieDnaPage({ userId }: { userId: string | null }) {
