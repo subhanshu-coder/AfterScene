@@ -45,7 +45,7 @@ export default function MovieDnaPage({ userId }: { userId: string | null }) {
   const dna = useMemo(() => {
     const genreCounts = new Map<string, number>(), decades = new Map<string, number>(), languages = new Map<string, number>(), directors = new Map<string, number>(), actors = new Map<string, number>();
     for (const movie of query.data?.movies ?? []) {
-      for (const genreId of movie.genres) {
+      for (const genreId of new Set(movie.genres)) {
         const name = genreNames[genreId] ?? 'Other';
         genreCounts.set(name, (genreCounts.get(name) ?? 0) + movie.weight);
       }
