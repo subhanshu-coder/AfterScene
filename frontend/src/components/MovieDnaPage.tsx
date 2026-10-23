@@ -62,7 +62,7 @@ export default function MovieDnaPage({ userId }: { userId: string | null }) {
   }, [query.data]);
 
   return <section className="dna-page"><header className="dna-page-heading"><span><Dna size={16}/> YOUR MOVIE DNA</span><h1>Your taste,<br/><i>in focus.</i></h1><p>Built from the films you rate, watch, and save.</p></header>
-    {query.isPending && <p className="community-state">Reading your movie history…</p>}
+    {query.isPending && <p className="community-state" role="status" aria-live="polite">Reading your movie history…</p>}
     {query.isError && <div className="community-error-panel"><b>Movie DNA couldn’t load.</b><span>{query.error.message}</span><button onClick={() => void query.refetch()}>Retry</button></div>}
     {!query.isPending && !query.isError && query.data?.movies.length === 0 && <div className="community-empty"><Film size={25}/><b>Your taste profile starts with your first film.</b><span>Rate a movie, mark it watched, or save it to your watchlist.</span></div>}
     {!!query.data?.movies.length && <><div className="dna-overview"><div><Film size={18}/><span><b>{query.data.movies.length}</b><small>films in your history</small></span></div><div><Star size={18}/><span><b>{query.data.average === null ? '—' : query.data.average.toFixed(1)}</b><small>average rating</small></span></div><div><CalendarRange size={18}/><span><b>{dna.decades[0]?.label ?? '—'}</b><small>favorite decade</small></span></div></div>
