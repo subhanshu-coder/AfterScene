@@ -22,6 +22,7 @@ async function getTasteData(userId: string) {
   const movies = await supabase.from('movies').select('id,title,genres,release_date,metadata').in('id', allIds);
   if (movies.error) throw new Error('Movie details for your taste profile could not load.');
   const ratingMap = new Map((ratings.data ?? []).filter((entry) => Number.isFinite(Number(entry.rating))).map((entry) => [entry.movie_id, Number(entry.rating)]));
+  const historyRatingMap = new Map((history.data ?? []).filter((entry) => entry.rating !== null && Number.isFinite(Number(entry.rating))).map((entry) => [entry.movie_id, Number(entry.rating)]));
   const historyIds = new Set((history.data ?? []).map((entry) => entry.movie_id));
   const watchIds = new Set((watchlist.data ?? []).map((entry) => entry.movie_id));
   const tasteMovies = (movies.data ?? []).map((movie) => {
