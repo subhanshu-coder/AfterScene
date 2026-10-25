@@ -66,6 +66,7 @@ export default function SchedulePage({ onOpen }: SchedulePageProps) {
     <div className="schedule-tabs" role="tablist" aria-orientation="horizontal" aria-label="Release schedule" onKeyDown={handleTabListKeyDown}>
       {sections.map(({ id, label, icon: Icon }) => <button type="button" role="tab" id={`release-${id}`} aria-controls="schedule-content" aria-selected={bucket === id} key={id} onClick={() => { setBucket(id); setPage(1); if (id === 'announced' && year === currentYear) { const announcedYear = Number(new Intl.DateTimeFormat('en', { timeZone: 'Asia/Kolkata', year: 'numeric' }).format(new Date(Date.now() + 91 * 86_400_000))); if (announcedYear > year) setYear(announcedYear); } }}><Icon size={17}/>{label}</button>)}
     </div>
+    <div id="schedule-content" role="tabpanel" aria-labelledby={`title-type-${media} release-${bucket}`}>
     <div className="schedule-results-heading">
       <div><h2>{selected.label} {selectedMedia.label.toLowerCase()} in {year}</h2><span>{selected.hint} · real TMDB data · India-local dates</span></div>
       {schedule.data && <span className="schedule-result-count" aria-live="polite">{titleCount} {media === 'movie' ? 'films' : media === 'anime' ? 'anime series' : 'series'}</span>}
