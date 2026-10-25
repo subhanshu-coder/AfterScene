@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type KeyboardEvent } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { CalendarDays, Check, Clock3, Megaphone, Popcorn } from 'lucide-react';
 import { getMovieSchedule, type ScheduleBucket, type ScheduleMedia } from '../services/movies';
@@ -22,6 +22,17 @@ const mediaOptions: { id: ScheduleMedia; label: string }[] = [
 function formatReleaseDate(value: string) {
   const date = new Date(`${value}T00:00:00Z`);
   return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat('en-IN', { dateStyle: 'medium', timeZone: 'UTC' }).format(date);
+}
+
+function handleTabListKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+  const tabs = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+  if (!tabs.length) return;
+  const activeIndex = tabs.indexOf(document.activeElement as HTMLButtonElement);
+  const nextIndex = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : event.key === 'ArrowRight' ? (activeIndex + 1) % tabs.length : event.key === 'ArrowLeft' ? (activeIndex - 1 + tabs.length) % tabs.length : -1;
+  if (nextIndex < 0) return;
+  event.preventDefault();
+  tabs[nextIndex].focus();
+  tabs[nextIndex].click();
 }
 
 export default function SchedulePage({ onOpen }: SchedulePageProps) {
