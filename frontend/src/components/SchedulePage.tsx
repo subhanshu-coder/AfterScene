@@ -19,6 +19,11 @@ const mediaOptions: { id: ScheduleMedia; label: string }[] = [
   { id: 'anime', label: 'Anime' },
 ];
 
+function formatReleaseDate(value: string) {
+  const date = new Date(`${value}T00:00:00Z`);
+  return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat('en-IN', { dateStyle: 'medium', timeZone: 'UTC' }).format(date);
+}
+
 export default function SchedulePage({ onOpen }: SchedulePageProps) {
   const currentYear = Number(new Intl.DateTimeFormat('en', { timeZone: 'Asia/Kolkata', year: 'numeric' }).format(new Date()));
   const [year, setYear] = useState(currentYear);
