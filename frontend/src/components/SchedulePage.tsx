@@ -78,7 +78,7 @@ export default function SchedulePage({ onOpen }: SchedulePageProps) {
       const destination = title.media_type === 'tv' || media !== 'movie' ? `https://www.themoviedb.org/tv/${title.id}` : null;
       const card = <><span className="schedule-poster">{title.poster_path ? <img src={`https://image.tmdb.org/t/p/w342${title.poster_path}`} alt={`${title.title} poster`} loading="lazy" decoding="async"/> : <Popcorn size={22}/>}</span><span className="schedule-movie-title">{title.title}</span><span className="schedule-release-date">{title.release_date ? formatReleaseDate(title.release_date) : 'Date not listed'}</span></>;
       return destination
-        ? <a className="schedule-movie" href={destination} target="_blank" rel="noreferrer" key={title.id}>{card}</a>
+        ? <a className="schedule-movie" href={destination} target="_blank" rel="noreferrer" aria-label={`Open ${title.title} on TMDB in a new tab`} key={title.id}>{card}</a>
         : <button className="schedule-movie" type="button" key={title.id} onClick={() => onOpen(title)}>{card}</button>;
     })}</div>
     {schedule.data && schedule.data.total_pages > 1 && <nav className="schedule-pagination" aria-label="Schedule pages">
