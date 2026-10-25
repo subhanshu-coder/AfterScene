@@ -41,7 +41,7 @@ export default function SchedulePage({ onOpen }: SchedulePageProps) {
         <p>Browse real release dates for films, series, and anime.</p>
       </div>
       <label className="schedule-year">Year<select value={year} onChange={(event) => { setYear(Number(event.target.value)); setPage(1); }}>
-        {Array.from({ length: currentYear - 1999 + 6 }, (_, index) => currentYear + 5 - index).map((option) => <option value={option} key={option}>{option}</option>)}
+        {scheduleYears(currentYear).map((option) => <option value={option} key={option}>{option}</option>)}
       </select></label>
     </header>
     <div className="schedule-media-tabs" role="tablist" aria-orientation="horizontal" aria-label="Title type">
