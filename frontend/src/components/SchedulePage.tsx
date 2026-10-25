@@ -61,7 +61,7 @@ export default function SchedulePage({ onOpen }: SchedulePageProps) {
       </select></label>
     </header>
     <div className="schedule-media-tabs" role="tablist" aria-orientation="horizontal" aria-label="Title type" onKeyDown={handleTabListKeyDown}>
-      {mediaOptions.map((option) => <button type="button" role="tab" aria-selected={media === option.id} key={option.id} onClick={() => { setMedia(option.id); setPage(1); }}>{option.label}</button>)}
+      {mediaOptions.map((option) => <button type="button" role="tab" id={`title-type-${option.id}`} aria-controls="schedule-content" aria-selected={media === option.id} key={option.id} onClick={() => { setMedia(option.id); setPage(1); }}>{option.label}</button>)}
     </div>
     <div className="schedule-tabs" role="tablist" aria-orientation="horizontal" aria-label="Release schedule" onKeyDown={handleTabListKeyDown}>
       {sections.map(({ id, label, icon: Icon }) => <button type="button" role="tab" aria-selected={bucket === id} key={id} onClick={() => { setBucket(id); setPage(1); if (id === 'announced' && year === currentYear) { const announcedYear = Number(new Intl.DateTimeFormat('en', { timeZone: 'Asia/Kolkata', year: 'numeric' }).format(new Date(Date.now() + 91 * 86_400_000))); if (announcedYear > year) setYear(announcedYear); } }}><Icon size={17}/>{label}</button>)}
