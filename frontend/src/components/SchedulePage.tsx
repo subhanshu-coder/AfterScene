@@ -11,6 +11,8 @@ const sections: { id: ScheduleBucket; label: string; icon: typeof CalendarDays; 
   { id: 'upcoming', label: 'Upcoming', icon: Clock3, hint: 'The next 90 days' },
   { id: 'announced', label: 'Announced', icon: Megaphone, hint: 'Release dates beyond the next 90 days' },
 ];
+const scheduleYears = (currentYear: number) => Array.from({ length: currentYear + 6 - 1900 }, (_, index) => currentYear + 5 - index);
+
 const mediaOptions: { id: ScheduleMedia; label: string }[] = [
   { id: 'movie', label: 'Movies' },
   { id: 'tv', label: 'TV series' },
