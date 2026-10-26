@@ -96,7 +96,7 @@ export default function NotificationCenter({ userId, onNavigate }: Props) {
     <button type="button" className="icon-button notification-button" onClick={() => setOpen((value) => !value)} aria-label={unread ? `Notifications, ${unread} unread` : 'Notifications'} aria-expanded={open}>
       <Bell size={18}/>{unread > 0 && <span className="notification-count" aria-live="polite">{unread > 99 ? '99+' : unread}</span>}
     </button>
-    {open && <><button className="notification-dismiss" onClick={() => setOpen(false)} aria-label="Close notifications"><X size={16}/></button><section className="notification-popover" aria-label="Notifications">
+    {open && <><button type="button" className="notification-dismiss" onClick={() => setOpen(false)} aria-label="Close notifications"><X size={16}/></button><section className="notification-popover" aria-label="Notifications">
       <header><div><h2>Notifications</h2><span>{unread ? `${unread} unread` : 'You’re all caught up'}</span></div><button disabled={!unread} onClick={() => void markAllRead()} aria-label="Mark all as read"><CheckCheck size={17}/></button></header>
       {query.isError && <div className="notification-empty"><b>Couldn’t load notifications.</b><button onClick={() => void query.refetch()}>Try again</button></div>}
       {!query.isError && notifications.length === 0 && <div className="notification-empty"><Bell size={20}/><b>No notifications yet</b><span>Follows, comments, and reactions will show up here.</span></div>}
