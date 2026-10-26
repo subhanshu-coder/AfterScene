@@ -98,6 +98,7 @@ export default function NotificationCenter({ userId, onNavigate }: Props) {
     </button>
     {open && <><button type="button" className="notification-dismiss" onClick={() => setOpen(false)} aria-label="Close notifications"><X size={16}/></button><section className="notification-popover" aria-label="Notifications">
       <header><div><h2>Notifications</h2><span>{unread ? `${unread} unread` : 'You’re all caught up'}</span></div><button disabled={!unread} onClick={() => void markAllRead()} aria-label="Mark all as read"><CheckCheck size={17}/></button></header>
+      {query.isPending && <div className="notification-empty" role="status">Loading notifications…</div>}
       {query.isError && <div className="notification-empty"><b>Couldn’t load notifications.</b><button onClick={() => void query.refetch()}>Try again</button></div>}
       {!query.isError && notifications.length === 0 && <div className="notification-empty"><Bell size={20}/><b>No notifications yet</b><span>Follows, comments, and reactions will show up here.</span></div>}
       <div className="notification-list">{notifications.slice(0, 8).map((item) => <button className={`notification-row ${item.read_at ? '' : 'is-unread'}`} key={item.id} onClick={() => void markRead(item)}>
