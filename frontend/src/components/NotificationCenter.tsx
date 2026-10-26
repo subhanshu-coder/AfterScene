@@ -87,7 +87,7 @@ export default function NotificationCenter({ userId, onNavigate }: Props) {
       {query.isError && <div className="notification-empty"><b>Couldn’t load notifications.</b><button onClick={() => void query.refetch()}>Try again</button></div>}
       {!query.isError && notifications.length === 0 && <div className="notification-empty"><Bell size={20}/><b>No notifications yet</b><span>Follows, comments, and reactions will show up here.</span></div>}
       <div className="notification-list">{notifications.slice(0, 8).map((item) => <button className={`notification-row ${item.read_at ? '' : 'is-unread'}`} key={item.id} onClick={() => void markRead(item)}>
-        <span className="notification-avatar">{item.actor?.avatar_url ? <img src={avatarUrl(item.actor.avatar_url) ?? ''} alt=""/> : icon(item.kind)}</span><span className="notification-copy"><span>{description(item)}</span><time dateTime={item.created_at}>{new Date(item.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</time></span>{!item.read_at && <i aria-label="Unread"/>}
+        <span className="notification-avatar">{item.actor?.avatar_url ? <img src={avatarUrl(item.actor.avatar_url) ?? ''} alt=""/> : icon(item.kind)}</span><span className="notification-copy"><span>{description(item)}</span><time dateTime={item.created_at}>{formatNotificationDate(item.created_at)}</time></span>{!item.read_at && <i aria-label="Unread"/>}
       </button>)}</div>
       <button className="notifications-all" onClick={() => { setOpen(false); onNavigate('/notifications'); }}>See all notifications</button>
     </section></>}
