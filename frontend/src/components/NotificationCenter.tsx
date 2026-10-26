@@ -14,6 +14,17 @@ function formatNotificationDate(value: string) {
   return Number.isNaN(date.getTime()) ? 'Just now' : notificationDateFormatter.format(date);
 }
 
+function notificationVerb(kind: string) {
+  if (kind === 'follow') return 'started following you.';
+  if (kind === 'reaction') return 'reacted to your post.';
+  if (kind === 'reply') return 'replied to you.';
+  if (kind === 'review_reply') return 'replied to your review.';
+  if (kind === 'review_helpful') return 'found your review helpful.';
+  if (kind === 'message') return 'sent you a message.';
+  if (kind === 'watch_party') return 'invited you to a watch party.';
+  return 'commented on your post.';
+}
+
 export default function NotificationCenter({ userId, onNavigate }: Props) {
   const [open, setOpen] = useState(false);
   const client = useQueryClient();
