@@ -25,6 +25,14 @@ function notificationVerb(kind: string) {
   return 'commented on your post.';
 }
 
+function notificationDestination(item: NotificationRow) {
+  if (item.kind === 'follow' && item.actor_id) return `/profile/${item.actor_id}`;
+  if ((item.kind === 'review_helpful' || item.kind === 'review_reply') && item.entity_id) return `/community?space=Reviews&review=${item.entity_id}`;
+  if (item.kind === 'watch_party') return '/schedule';
+  if (item.entity_id) return `/community?post=${item.entity_id}`;
+  return '/community';
+}
+
 export default function NotificationCenter({ userId, onNavigate }: Props) {
   const [open, setOpen] = useState(false);
   const client = useQueryClient();
