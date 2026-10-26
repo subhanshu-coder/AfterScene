@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bell, CheckCheck, Film, Heart, MessageCircle, UserRoundPlus, X } from 'lucide-react';
 import { avatarUrl } from '../lib/avatar';
