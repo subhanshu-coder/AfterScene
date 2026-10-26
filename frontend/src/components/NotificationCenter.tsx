@@ -7,6 +7,13 @@ import { supabase } from '../lib/supabase';
 type NotificationRow = { id: string; kind: string; actor_id: string | null; entity_id: string | null; read_at: string | null; created_at: string; actor?: { display_name: string; avatar_url: string | null } };
 type Props = { userId: string; onNavigate: (path: string) => void };
 
+const notificationDateFormatter = new Intl.DateTimeFormat('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+
+function formatNotificationDate(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? 'Just now' : notificationDateFormatter.format(date);
+}
+
 export default function NotificationCenter({ userId, onNavigate }: Props) {
   const [open, setOpen] = useState(false);
   const client = useQueryClient();
