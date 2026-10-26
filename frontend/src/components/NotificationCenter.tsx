@@ -7,6 +7,13 @@ import { supabase } from '../lib/supabase';
 type NotificationRow = { id: string; kind: string; actor_id: string | null; entity_id: string | null; read_at: string | null; created_at: string; actor?: { display_name: string; avatar_url: string | null } };
 type Props = { userId: string; onNavigate: (path: string) => void };
 
+const notificationDateFormatter = new Intl.DateTimeFormat('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+
+function formatNotificationDate(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? 'Just now' : notificationDateFormatter.format(date);
+}
+
 export default function NotificationCenter({ userId, onNavigate }: Props) {
   const [open, setOpen] = useState(false);
   const client = useQueryClient();
@@ -80,7 +87,7 @@ export default function NotificationCenter({ userId, onNavigate }: Props) {
       {query.isError && <div className="notification-empty"><b>Couldn’t load notifications.</b><button onClick={() => void query.refetch()}>Try again</button></div>}
       {!query.isError && notifications.length === 0 && <div className="notification-empty"><Bell size={20}/><b>No notifications yet</b><span>Follows, comments, and reactions will show up here.</span></div>}
       <div className="notification-list">{notifications.slice(0, 8).map((item) => <button className={`notification-row ${item.read_at ? '' : 'is-unread'}`} key={item.id} onClick={() => void markRead(item)}>
-        <span className="notification-avatar">{item.actor?.avatar_url ? <img src={avatarUrl(item.actor.avatar_url) ?? ''} alt=""/> : icon(item.kind)}</span><span className="notification-copy"><span>{description(item)}</span><time dateTime={item.created_at}>{new Date(item.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</time></span>{!item.read_at && <i aria-label="Unread"/>}
+        <span className="notification-avatar">{item.actor?.avatar_url ? <img src={avatarUrl(item.actor.avatar_url) ?? ''} alt=""/> : icon(item.kind)}</span><span className="notification-copy"><span>{description(item)}</span><time dateTime={item.created_at}>{formatNotificationDate(item.created_at)}</time></span>{!item.read_at && <i aria-label="Unread"/>}
       </button>)}</div>
       <button className="notifications-all" onClick={() => { setOpen(false); onNavigate('/notifications'); }}>See all notifications</button>
     </section></>}
