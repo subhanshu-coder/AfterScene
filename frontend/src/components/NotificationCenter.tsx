@@ -111,7 +111,7 @@ export default function NotificationCenter({ userId, onNavigate }: Props) {
 export function NotificationsPage({ userId, onNavigate }: Props) {
   const [reload, setReload] = useState(0);
   const client = useQueryClient();
-  const query = useQuery({ queryKey: ['notifications', userId, reload], enabled: Boolean(supabase), queryFn: async () => {
+  const query = useQuery({ queryKey: ['notifications', userId, reload], enabled: Boolean(supabase && userId), queryFn: async () => {
     if (!supabase) return { rows: [] as NotificationRow[], unreadCount: 0 };
     const [{ data: rows, error }, { count, error: countError }] = await Promise.all([
       supabase.from('notifications').select('id,kind,actor_id,entity_id,read_at,created_at').eq('recipient_id', userId).order('created_at', { ascending: false }).limit(100),
