@@ -64,12 +64,7 @@ export default function NotificationCenter({ userId, onNavigate }: Props) {
       await client.invalidateQueries({ queryKey: ['notifications', userId] });
     }
     setOpen(false);
-    if (item.kind === 'follow' && item.actor_id) onNavigate(`/profile/${item.actor_id}`);
-    else if ((item.kind === 'review_helpful' || item.kind === 'review_reply') && item.entity_id) onNavigate(`/community?space=Reviews&review=${item.entity_id}`);
-    else if (item.kind === 'reply' && item.entity_id) onNavigate(`/community?post=${item.entity_id}`);
-    else if (item.kind === 'watch_party') onNavigate('/schedule');
-    else if (item.entity_id) onNavigate(`/community?post=${item.entity_id}`);
-    else onNavigate('/community');
+    onNavigate(notificationDestination(item));
   }
 
   async function markAllRead() {
