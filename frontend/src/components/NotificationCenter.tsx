@@ -126,11 +126,7 @@ export function NotificationsPage({ userId, onNavigate }: Props) {
   async function open(item: NotificationRow) {
     if (supabase && !item.read_at) await supabase.from('notifications').update({ read_at: new Date().toISOString() }).eq('id', item.id).eq('recipient_id', userId);
     await client.invalidateQueries({ queryKey: ['notifications', userId] });
-    if (item.kind === 'follow' && item.actor_id) onNavigate(`/profile/${item.actor_id}`);
-    else if ((item.kind === 'review_helpful' || item.kind === 'review_reply') && item.entity_id) onNavigate(`/community?space=Reviews&review=${item.entity_id}`);
-    else if (item.kind === 'reply' && item.entity_id) onNavigate(`/community?post=${item.entity_id}`);
-    else if (item.entity_id) onNavigate(`/community?post=${item.entity_id}`);
-    else onNavigate('/community');
+    onNavigate(notificationDestination(item));
   }
   async function markAll() {
     if (!supabase) return;
