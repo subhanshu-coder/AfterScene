@@ -36,6 +36,14 @@ function notificationDestination(item: NotificationRow) {
 export default function NotificationCenter({ userId, onNavigate }: Props) {
   const [open, setOpen] = useState(false);
   const client = useQueryClient();
+  useEffect(() => {
+    if (!open) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
+  }, [open]);
   const query = useQuery({
     queryKey: ['notifications', userId],
     enabled: Boolean(supabase && userId),
