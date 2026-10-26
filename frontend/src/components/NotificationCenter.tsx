@@ -93,7 +93,7 @@ export default function NotificationCenter({ userId, onNavigate }: Props) {
   }
 
   return <div className="notification-center">
-    <button className="icon-button notification-button" onClick={() => setOpen((value) => !value)} aria-label={unread ? `Notifications, ${unread} unread` : 'Notifications'} aria-expanded={open}>
+    <button type="button" className="icon-button notification-button" onClick={() => setOpen((value) => !value)} aria-label={unread ? `Notifications, ${unread} unread` : 'Notifications'} aria-expanded={open}>
       <Bell size={18}/>{unread > 0 && <span className="notification-count" aria-live="polite">{unread > 99 ? '99+' : unread}</span>}
     </button>
     {open && <><button className="notification-dismiss" onClick={() => setOpen(false)} aria-label="Close notifications"><X size={16}/></button><section className="notification-popover" aria-label="Notifications">
