@@ -112,7 +112,10 @@ async function getPosts(space: Space, userId: string | null): Promise<Post[]> {
       }),
     };
   }) as Post[];
-  if (space === 'Trending') return postItems.sort((left, right) => { const score = (post: Post) => (post.likes * 2 + post.comments.length * 1.5 + post.reposts * 2) / Math.pow((Date.now() - new Date(post.created_at).getTime()) / 3_600_000 + 2, 0.65); return score(right) - score(left); });
+  if (space === 'Trending') {
+    const now = Date.now();
+    return postItems.sort((left, right) => trendingScore(right, now) - trendingScore(left, now));
+  }
   return postItems;
 }
 
