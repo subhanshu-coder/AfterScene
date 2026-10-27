@@ -100,7 +100,10 @@ async function getPosts(space: Space, userId: string | null): Promise<Post[]> {
       reposted: userId ? postReposts.has(userId) : false,
       reposts: postReposts.size,
       followed: followedIds.has(post.author_id),
-      comments: comments.filter((comment) => comment.post_id === post.id).map((comment) => { const likes = (commentReactions.data ?? []).filter((row) => row.comment_id === comment.id); return { ...comment, profile: commentProfiles.get(comment.author_id), likes: likes.length, liked: likes.some((row) => row.user_id === userId) }; }),
+      comments: (commentsByPost.get(post.id) ?? []).map((comment) => {
+        const likes = commentLikesById.get(comment.id) ?? new Set<string>();
+        return { ...comment, profile: commentProfiles.get(comment.author_id), likes: likes.size, liked: userId ? likes.has(userId) : false };
+      }),
     };
   }) as Post[];
   if (space === 'Trending') return postItems.sort((left, right) => { const score = (post: Post) => (post.likes * 2 + post.comments.length * 1.5 + post.reposts * 2) / Math.pow((Date.now() - new Date(post.created_at).getTime()) / 3_600_000 + 2, 0.65); return score(right) - score(left); });
