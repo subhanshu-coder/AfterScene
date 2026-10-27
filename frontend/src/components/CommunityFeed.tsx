@@ -71,6 +71,12 @@ async function getPosts(space: Space, userId: string | null): Promise<Post[]> {
   }
   if (repostsResult.error) throw new Error(databaseMessage(repostsResult.error));
   const reposters = repostsResult.data ?? [];
+  const repostsByPost = new Map<string, Set<string>>();
+  for (const repost of reposters) {
+    const users = repostsByPost.get(repost.post_id) ?? new Set<string>();
+    users.add(repost.user_id);
+    repostsByPost.set(repost.post_id, users);
+  }
   const postItems = base.map((post) => {
     const likes = (reactionsResult.data ?? []).filter((row) => row.post_id === post.id && row.reaction === 'love');
     const postReposts = reposters.filter((row) => row.post_id === post.id);
