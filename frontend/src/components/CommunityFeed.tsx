@@ -62,6 +62,13 @@ async function getPosts(space: Space, userId: string | null): Promise<Post[]> {
   const commentReactions = comments.length ? await supabase.from('comment_reactions').select('comment_id,user_id').in('comment_id', comments.map((comment) => comment.id)) : { data: [], error: null };
   if (commentReactions.error) throw new Error(databaseMessage(commentReactions.error));
   const followedIds = new Set((followsResult.data ?? []).map((row) => row.followed_id));
+  const likesByPost = new Map<string, Set<string>>();
+  for (const reaction of reactionsResult.data ?? []) {
+    if (reaction.reaction !== 'love') continue;
+    const users = likesByPost.get(reaction.post_id) ?? new Set<string>();
+    users.add(reaction.user_id);
+    likesByPost.set(reaction.post_id, users);
+  }
   if (repostsResult.error) throw new Error(databaseMessage(repostsResult.error));
   const reposters = repostsResult.data ?? [];
   const postItems = base.map((post) => {
