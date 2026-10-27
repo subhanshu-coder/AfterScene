@@ -114,7 +114,7 @@ async function getPosts(space: Space, userId: string | null): Promise<Post[]> {
   }) as Post[];
   if (space === 'Trending') {
     const now = Date.now();
-    return postItems.sort((left, right) => trendingScore(right, now) - trendingScore(left, now));
+    return postItems.sort((left, right) => trendingScore(right, now) - trendingScore(left, now) || right.created_at.localeCompare(left.created_at));
   }
   return postItems;
 }
