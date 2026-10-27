@@ -37,6 +37,12 @@ async function getProfiles(ids: string[]) {
   return new Map(((data ?? []) as Profile[]).map((profile) => [profile.id, profile]));
 }
 
+function trendingScore(post: Post, now: number) {
+  const createdAt = Date.parse(post.created_at);
+  const ageHours = Number.isFinite(createdAt) ? Math.max(0, (now - createdAt) / 3_600_000) : 24;
+  return (post.likes * 2 + post.comments.length * 1.5 + post.reposts * 2) / Math.pow(ageHours + 2, 0.65);
+}
+
 async function getPosts(space: Space, userId: string | null): Promise<Post[]> {
   if (!supabase) throw new Error('Supabase is not configured for this deployment. Add the VITE_SUPABASE_URL and publishable key.');
   let request = supabase.from('posts').select('id,author_id,kind,body,image_path,is_spoiler,created_at').order('created_at', { ascending: false }).limit(40);
@@ -56,27 +62,60 @@ async function getPosts(space: Space, userId: string | null): Promise<Post[]> {
   ]);
   if (reactionsResult.error) throw new Error(databaseMessage(reactionsResult.error));
   if (commentsResult.error) throw new Error(databaseMessage(commentsResult.error));
+  if (followsResult.error) throw new Error(databaseMessage(followsResult.error));
   const comments = commentsResult.data ?? [];
   const commentProfiles = await getProfiles(comments.map((comment) => comment.author_id));
   const commentReactions = comments.length ? await supabase.from('comment_reactions').select('comment_id,user_id').in('comment_id', comments.map((comment) => comment.id)) : { data: [], error: null };
   if (commentReactions.error) throw new Error(databaseMessage(commentReactions.error));
+  const commentLikesById = new Map<string, Set<string>>();
+  for (const reaction of commentReactions.data ?? []) {
+    const users = commentLikesById.get(reaction.comment_id) ?? new Set<string>();
+    users.add(reaction.user_id);
+    commentLikesById.set(reaction.comment_id, users);
+  }
   const followedIds = new Set((followsResult.data ?? []).map((row) => row.followed_id));
-  const reposters = repostsResult.error ? [] : repostsResult.data ?? [];
+  const likesByPost = new Map<string, Set<string>>();
+  for (const reaction of reactionsResult.data ?? []) {
+    if (reaction.reaction !== 'love') continue;
+    const users = likesByPost.get(reaction.post_id) ?? new Set<string>();
+    users.add(reaction.user_id);
+    likesByPost.set(reaction.post_id, users);
+  }
+  if (repostsResult.error) throw new Error(databaseMessage(repostsResult.error));
+  const reposters = repostsResult.data ?? [];
+  const repostsByPost = new Map<string, Set<string>>();
+  for (const repost of reposters) {
+    const users = repostsByPost.get(repost.post_id) ?? new Set<string>();
+    users.add(repost.user_id);
+    repostsByPost.set(repost.post_id, users);
+  }
+  const commentsByPost = new Map<string, typeof comments>();
+  for (const comment of comments) {
+    const postComments = commentsByPost.get(comment.post_id) ?? [];
+    postComments.push(comment);
+    commentsByPost.set(comment.post_id, postComments);
+  }
   const postItems = base.map((post) => {
-    const likes = (reactionsResult.data ?? []).filter((row) => row.post_id === post.id && row.reaction === 'love');
-    const postReposts = reposters.filter((row) => row.post_id === post.id);
+    const postLikes = likesByPost.get(post.id) ?? new Set<string>();
+    const postReposts = repostsByPost.get(post.id) ?? new Set<string>();
     return {
       ...post,
       profile: profiles.get(post.author_id),
-      liked: likes.some((row) => row.user_id === userId),
-      likes: likes.length,
-      reposted: postReposts.some((row) => row.user_id === userId),
-      reposts: postReposts.length,
+      liked: userId ? postLikes.has(userId) : false,
+      likes: postLikes.size,
+      reposted: userId ? postReposts.has(userId) : false,
+      reposts: postReposts.size,
       followed: followedIds.has(post.author_id),
-      comments: comments.filter((comment) => comment.post_id === post.id).map((comment) => { const likes = (commentReactions.data ?? []).filter((row) => row.comment_id === comment.id); return { ...comment, profile: commentProfiles.get(comment.author_id), likes: likes.length, liked: likes.some((row) => row.user_id === userId) }; }),
+      comments: (commentsByPost.get(post.id) ?? []).map((comment) => {
+        const likes = commentLikesById.get(comment.id) ?? new Set<string>();
+        return { ...comment, profile: commentProfiles.get(comment.author_id), likes: likes.size, liked: userId ? likes.has(userId) : false };
+      }),
     };
   }) as Post[];
-  if (space === 'Trending') return postItems.sort((left, right) => { const score = (post: Post) => (post.likes * 2 + post.comments.length * 1.5 + post.reposts * 2) / Math.pow((Date.now() - new Date(post.created_at).getTime()) / 3_600_000 + 2, 0.65); return score(right) - score(left); });
+  if (space === 'Trending') {
+    const now = Date.now();
+    return postItems.sort((left, right) => trendingScore(right, now) - trendingScore(left, now) || right.created_at.localeCompare(left.created_at));
+  }
   return postItems;
 }
 
