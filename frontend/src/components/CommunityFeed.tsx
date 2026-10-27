@@ -97,8 +97,8 @@ async function getPosts(space: Space, userId: string | null): Promise<Post[]> {
       profile: profiles.get(post.author_id),
       liked: userId ? postLikes.has(userId) : false,
       likes: postLikes.size,
-      reposted: postReposts.some((row) => row.user_id === userId),
-      reposts: postReposts.length,
+      reposted: userId ? postReposts.has(userId) : false,
+      reposts: postReposts.size,
       followed: followedIds.has(post.author_id),
       comments: comments.filter((comment) => comment.post_id === post.id).map((comment) => { const likes = (commentReactions.data ?? []).filter((row) => row.comment_id === comment.id); return { ...comment, profile: commentProfiles.get(comment.author_id), likes: likes.length, liked: likes.some((row) => row.user_id === userId) }; }),
     };
