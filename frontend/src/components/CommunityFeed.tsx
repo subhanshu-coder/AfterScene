@@ -91,7 +91,7 @@ async function getPosts(space: Space, userId: string | null): Promise<Post[]> {
   }
   const postItems = base.map((post) => {
     const postLikes = likesByPost.get(post.id) ?? new Set<string>();
-    const postReposts = reposters.filter((row) => row.post_id === post.id);
+    const postReposts = repostsByPost.get(post.id) ?? new Set<string>();
     return {
       ...post,
       profile: profiles.get(post.author_id),
