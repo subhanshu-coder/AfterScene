@@ -37,6 +37,12 @@ async function getProfiles(ids: string[]) {
   return new Map(((data ?? []) as Profile[]).map((profile) => [profile.id, profile]));
 }
 
+function trendingScore(post: Post, now: number) {
+  const createdAt = Date.parse(post.created_at);
+  const ageHours = Number.isFinite(createdAt) ? Math.max(0, (now - createdAt) / 3_600_000) : 24;
+  return (post.likes * 2 + post.comments.length * 1.5 + post.reposts * 2) / Math.pow(ageHours + 2, 0.65);
+}
+
 async function getPosts(space: Space, userId: string | null): Promise<Post[]> {
   if (!supabase) throw new Error('Supabase is not configured for this deployment. Add the VITE_SUPABASE_URL and publishable key.');
   let request = supabase.from('posts').select('id,author_id,kind,body,image_path,is_spoiler,created_at').order('created_at', { ascending: false }).limit(40);
