@@ -90,7 +90,7 @@ async function getPosts(space: Space, userId: string | null): Promise<Post[]> {
     commentsByPost.set(comment.post_id, postComments);
   }
   const postItems = base.map((post) => {
-    const likes = (reactionsResult.data ?? []).filter((row) => row.post_id === post.id && row.reaction === 'love');
+    const postLikes = likesByPost.get(post.id) ?? new Set<string>();
     const postReposts = reposters.filter((row) => row.post_id === post.id);
     return {
       ...post,
