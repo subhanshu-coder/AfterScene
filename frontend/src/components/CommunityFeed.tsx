@@ -96,7 +96,7 @@ async function getPosts(space: Space, userId: string | null): Promise<Post[]> {
       ...post,
       profile: profiles.get(post.author_id),
       liked: likes.some((row) => row.user_id === userId),
-      likes: likes.length,
+      likes: postLikes.size,
       reposted: postReposts.some((row) => row.user_id === userId),
       reposts: postReposts.length,
       followed: followedIds.has(post.author_id),
