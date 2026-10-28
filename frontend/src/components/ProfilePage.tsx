@@ -42,7 +42,7 @@ export default function ProfilePage({ profileId, userId, onBack, onToast, onOpen
       const canViewContent = ownProfile || !user.is_private || isFollowing;
       const [postsResult, reviewsResult, followersResult, followingResult] = await Promise.all([
         canViewContent ? supabase.from('posts').select('id,kind,body,is_spoiler,image_path,created_at', { count: 'exact' }).eq('author_id', profileId).order('created_at', { ascending: false }).limit(50) : Promise.resolve({ data: [], count: 0, error: null }),
-        canViewContent ? supabase.from('reviews').select('id,title,body,rating,created_at,movie_id', { count: 'exact' }).eq('author_id', profileId).order('created_at', { ascending: false }).range(0, postPages * PROFILE_PAGE_SIZE - 1) : Promise.resolve({ data: [], count: 0, error: null }),
+        canViewContent ? supabase.from('reviews').select('id,title,body,rating,created_at,movie_id', { count: 'exact' }).eq('author_id', profileId).order('created_at', { ascending: false }).range(0, reviewPages * PROFILE_PAGE_SIZE - 1) : Promise.resolve({ data: [], count: 0, error: null }),
         supabase.from('follows').select('follower_id', { count: 'exact', head: true }).eq('followed_id', profileId),
         supabase.from('follows').select('followed_id', { count: 'exact', head: true }).eq('follower_id', profileId),
       ]);
