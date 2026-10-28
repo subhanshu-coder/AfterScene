@@ -55,6 +55,7 @@ export default function ProfilePage({ profileId, userId, onBack, onToast, onOpen
   const linkedProfiles = useQuery({
     queryKey: ['profile-links', profileId, tab, connectionPages],
     enabled: Boolean(supabase && (tab === 'followers' || tab === 'following')),
+    placeholderData: (previous) => previous,
     queryFn: async () => {
       if (!supabase) return [] as LinkProfile[];
       const column = tab === 'followers' ? 'follower_id' : 'followed_id';
