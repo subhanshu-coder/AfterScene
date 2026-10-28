@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Camera, Film, Heart, LoaderCircle, UserRoundCheck, UserRoundPlus } from 'lucide-react';
 import { avatarUrl } from '../lib/avatar';
@@ -10,15 +10,26 @@ type ProfilePost = { id: string; kind: string; body: string | null; is_spoiler: 
 type ProfileReview = { id: string; title: string | null; body: string; rating: number; created_at: string; movie_id: string };
 type LinkProfile = Pick<Profile, 'id' | 'username' | 'display_name' | 'avatar_url'>;
 
+const PROFILE_PAGE_SIZE = 30;
+
 export default function ProfilePage({ profileId, userId, onBack, onToast, onOpenProfile }: Props) {
   const client = useQueryClient();
   const [tab, setTab] = useState<'posts' | 'reviews' | 'followers' | 'following'>('posts');
   const [uploading, setUploading] = useState(false);
   const [followPending, setFollowPending] = useState(false);
+  const [postPages, setPostPages] = useState(1);
+  const [reviewPages, setReviewPages] = useState(1);
+  const [connectionPages, setConnectionPages] = useState(1);
   const ownProfile = profileId === userId;
+  useEffect(() => {
+    setPostPages(1);
+    setReviewPages(1);
+    setConnectionPages(1);
+  }, [profileId]);
   const profile = useQuery({
-    queryKey: ['profile-page', profileId, userId],
+    queryKey: ['profile-page', profileId, userId, postPages, reviewPages],
     enabled: Boolean(supabase),
+    placeholderData: (previous) => previous?.user.id === profileId ? previous : undefined,
     queryFn: async () => {
       if (!supabase) throw new Error('Profile service is not configured.');
       const [{ data: user, error: userError }, followResult] = await Promise.all([
@@ -31,8 +42,8 @@ export default function ProfilePage({ profileId, userId, onBack, onToast, onOpen
       const isFollowing = Boolean(followResult.data);
       const canViewContent = ownProfile || !user.is_private || isFollowing;
       const [postsResult, reviewsResult, followersResult, followingResult] = await Promise.all([
-        canViewContent ? supabase.from('posts').select('id,kind,body,is_spoiler,image_path,created_at', { count: 'exact' }).eq('author_id', profileId).order('created_at', { ascending: false }).limit(50) : Promise.resolve({ data: [], count: 0, error: null }),
-        canViewContent ? supabase.from('reviews').select('id,title,body,rating,created_at,movie_id', { count: 'exact' }).eq('author_id', profileId).order('created_at', { ascending: false }).limit(50) : Promise.resolve({ data: [], count: 0, error: null }),
+        canViewContent ? supabase.from('posts').select('id,kind,body,is_spoiler,image_path,created_at', { count: 'exact' }).eq('author_id', profileId).order('created_at', { ascending: false }).range(0, postPages * PROFILE_PAGE_SIZE - 1) : Promise.resolve({ data: [], count: 0, error: null }),
+        canViewContent ? supabase.from('reviews').select('id,title,body,rating,created_at,movie_id', { count: 'exact' }).eq('author_id', profileId).order('created_at', { ascending: false }).range(0, reviewPages * PROFILE_PAGE_SIZE - 1) : Promise.resolve({ data: [], count: 0, error: null }),
         supabase.from('follows').select('follower_id', { count: 'exact', head: true }).eq('followed_id', profileId),
         supabase.from('follows').select('followed_id', { count: 'exact', head: true }).eq('follower_id', profileId),
       ]);
@@ -42,12 +53,13 @@ export default function ProfilePage({ profileId, userId, onBack, onToast, onOpen
     },
   });
   const linkedProfiles = useQuery({
-    queryKey: ['profile-links', profileId, tab],
+    queryKey: ['profile-links', profileId, tab, connectionPages],
     enabled: Boolean(supabase && (tab === 'followers' || tab === 'following')),
+    placeholderData: (previous, previousQuery) => previousQuery?.queryKey[2] === tab ? previous : undefined,
     queryFn: async () => {
       if (!supabase) return [] as LinkProfile[];
       const column = tab === 'followers' ? 'follower_id' : 'followed_id';
-      const { data: links, error } = await supabase.from('follows').select('follower_id,followed_id').eq(tab === 'followers' ? 'followed_id' : 'follower_id', profileId).order('created_at', { ascending: false }).limit(100);
+      const { data: links, error } = await supabase.from('follows').select('follower_id,followed_id').eq(tab === 'followers' ? 'followed_id' : 'follower_id', profileId).order('created_at', { ascending: false }).range(0, connectionPages * PROFILE_PAGE_SIZE - 1);
       if (error) throw new Error('This list could not be loaded.');
       const ids = [...new Set((links ?? []).map((link) => link[column]))];
       if (!ids.length) return [] as LinkProfile[];
@@ -132,10 +144,12 @@ export default function ProfilePage({ profileId, userId, onBack, onToast, onOpen
       <div className="profile-section-title"><Film size={17}/><h2>{tab === 'posts' ? 'Recent posts' : 'Movie reviews'}</h2></div>
       {!profile.data.canViewContent && <div className="profile-empty" role="status"><Heart size={21}/><b>This account is private.</b><span>Follow this member to see their posts and reviews.</span></div>}
       {profile.data.canViewContent && tab === 'posts' && profile.data.posts.map((post) => <article className="profile-post" key={post.id}><small>{post.kind} · <time dateTime={post.created_at}>{new Date(post.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</time></small>{post.is_spoiler ? <details><summary>Spoiler — reveal post</summary><p>{post.body}</p></details> : <p>{post.body || 'Shared a photo'}</p>}{post.image_path && supabase && <img className="profile-post-image" src={supabase.storage.from('post-images').getPublicUrl(post.image_path).data.publicUrl} alt={`${post.kind} photo attachment`} loading="lazy" decoding="async"/>}</article>)}
+      {profile.data.canViewContent && tab === 'posts' && profile.data.posts.length < profile.data.postsCount && <button type="button" className="profile-load-more" disabled={profile.isFetching} onClick={() => setPostPages((page) => page + 1)}><span aria-live="polite">{profile.isFetching ? 'Loading posts…' : 'Load more posts'}</span></button>}
       {profile.data.canViewContent && tab === 'reviews' && profile.data.reviews.map((review) => <article className="profile-post" key={review.id}><small>★ {Number(review.rating).toFixed(1)} · <time dateTime={review.created_at}>{new Date(review.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</time></small>{review.title && <h3>{review.title}</h3>}<p>{review.body}</p></article>)}
+      {profile.data.canViewContent && tab === 'reviews' && profile.data.reviews.length < profile.data.reviewsCount && <button type="button" className="profile-load-more" disabled={profile.isFetching} onClick={() => setReviewPages((page) => page + 1)}><span aria-live="polite">{profile.isFetching ? 'Loading reviews…' : 'Load more reviews'}</span></button>}
       {profile.data.canViewContent && ((tab === 'posts' && !profile.data.posts.length) || (tab === 'reviews' && !profile.data.reviews.length)) && <div className="profile-empty"><Heart size={21}/><b>{tab === 'posts' ? 'No public posts yet.' : 'No reviews yet.'}</b></div>}
     </div>}
-    {(tab === 'followers' || tab === 'following') && <div className="profile-posts"><div className="profile-section-title"><Heart size={17}/><h2>{tab === 'followers' ? 'Followers' : 'Following'}</h2></div>{linkedProfiles.isPending && <p className="community-state">Loading people…</p>}{linkedProfiles.isError && <div className="community-state community-error" role="alert">{linkedProfiles.error.message}<button onClick={() => void linkedProfiles.refetch()}>Try again</button></div>}{!linkedProfiles.isPending && !linkedProfiles.data?.length && <div className="profile-empty"><Heart size={21}/><b>No {tab} yet.</b></div>}{linkedProfiles.data?.map((link) => <button className="profile-link-row" key={link.id} aria-label={`Open ${link.display_name} profile`} onClick={() => onOpenProfile(link.id)}><span>{link.avatar_url ? <img src={avatarUrl(link.avatar_url) ?? ''} alt=""/> : link.display_name.slice(0, 1).toUpperCase()}</span><b>{link.display_name}</b><small>@{link.username}</small></button>)}</div>}
+    {(tab === 'followers' || tab === 'following') && <div className="profile-posts"><div className="profile-section-title"><Heart size={17}/><h2>{tab === 'followers' ? 'Followers' : 'Following'}</h2></div>{linkedProfiles.isPending && <p className="community-state">Loading people…</p>}{linkedProfiles.isError && <div className="community-state community-error" role="alert">{linkedProfiles.error.message}<button onClick={() => void linkedProfiles.refetch()}>Try again</button></div>}{!linkedProfiles.isPending && !linkedProfiles.data?.length && <div className="profile-empty"><Heart size={21}/><b>No {tab} yet.</b></div>}{linkedProfiles.data?.map((link) => <button className="profile-link-row" key={link.id} aria-label={`Open ${link.display_name} profile`} onClick={() => onOpenProfile(link.id)}><span>{link.avatar_url ? <img src={avatarUrl(link.avatar_url) ?? ''} alt=""/> : link.display_name.slice(0, 1).toUpperCase()}</span><b>{link.display_name}</b><small>@{link.username}</small></button>)}{linkedProfiles.data && linkedProfiles.data.length < (tab === 'followers' ? profile.data.followers : profile.data.following) && <button type="button" className="profile-load-more" disabled={linkedProfiles.isFetching} onClick={() => setConnectionPages((page) => page + 1)}><span aria-live="polite">{linkedProfiles.isFetching ? 'Loading people…' : `Load more ${tab}`}</span></button>}</div>}
   </section>;
 }
 
