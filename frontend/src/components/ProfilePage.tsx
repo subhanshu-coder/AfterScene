@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Camera, Film, Heart, LoaderCircle, UserRoundCheck, UserRoundPlus } from 'lucide-react';
 import { avatarUrl } from '../lib/avatar';
@@ -21,6 +21,11 @@ export default function ProfilePage({ profileId, userId, onBack, onToast, onOpen
   const [reviewPages, setReviewPages] = useState(1);
   const [connectionPages, setConnectionPages] = useState(1);
   const ownProfile = profileId === userId;
+  useEffect(() => {
+    setPostPages(1);
+    setReviewPages(1);
+    setConnectionPages(1);
+  }, [profileId]);
   const profile = useQuery({
     queryKey: ['profile-page', profileId, userId],
     enabled: Boolean(supabase),
