@@ -27,7 +27,7 @@ export default function ProfilePage({ profileId, userId, onBack, onToast, onOpen
     setConnectionPages(1);
   }, [profileId]);
   const profile = useQuery({
-    queryKey: ['profile-page', profileId, userId],
+    queryKey: ['profile-page', profileId, userId, postPages, reviewPages],
     enabled: Boolean(supabase),
     queryFn: async () => {
       if (!supabase) throw new Error('Profile service is not configured.');
