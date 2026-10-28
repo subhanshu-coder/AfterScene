@@ -10,6 +10,8 @@ type ProfilePost = { id: string; kind: string; body: string | null; is_spoiler: 
 type ProfileReview = { id: string; title: string | null; body: string; rating: number; created_at: string; movie_id: string };
 type LinkProfile = Pick<Profile, 'id' | 'username' | 'display_name' | 'avatar_url'>;
 
+const PROFILE_PAGE_SIZE = 30;
+
 export default function ProfilePage({ profileId, userId, onBack, onToast, onOpenProfile }: Props) {
   const client = useQueryClient();
   const [tab, setTab] = useState<'posts' | 'reviews' | 'followers' | 'following'>('posts');
