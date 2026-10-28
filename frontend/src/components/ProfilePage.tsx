@@ -57,7 +57,7 @@ export default function ProfilePage({ profileId, userId, onBack, onToast, onOpen
     queryFn: async () => {
       if (!supabase) return [] as LinkProfile[];
       const column = tab === 'followers' ? 'follower_id' : 'followed_id';
-      const { data: links, error } = await supabase.from('follows').select('follower_id,followed_id').eq(tab === 'followers' ? 'followed_id' : 'follower_id', profileId).order('created_at', { ascending: false }).limit(100);
+      const { data: links, error } = await supabase.from('follows').select('follower_id,followed_id').eq(tab === 'followers' ? 'followed_id' : 'follower_id', profileId).order('created_at', { ascending: false }).range(0, connectionPages * PROFILE_PAGE_SIZE - 1);
       if (error) throw new Error('This list could not be loaded.');
       const ids = [...new Set((links ?? []).map((link) => link[column]))];
       if (!ids.length) return [] as LinkProfile[];
