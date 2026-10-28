@@ -17,6 +17,9 @@ export default function ProfilePage({ profileId, userId, onBack, onToast, onOpen
   const [tab, setTab] = useState<'posts' | 'reviews' | 'followers' | 'following'>('posts');
   const [uploading, setUploading] = useState(false);
   const [followPending, setFollowPending] = useState(false);
+  const [postPages, setPostPages] = useState(1);
+  const [reviewPages, setReviewPages] = useState(1);
+  const [connectionPages, setConnectionPages] = useState(1);
   const ownProfile = profileId === userId;
   const profile = useQuery({
     queryKey: ['profile-page', profileId, userId],
