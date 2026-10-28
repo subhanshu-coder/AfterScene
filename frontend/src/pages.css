@@ -45,3 +45,5 @@ body.nav-locked{overflow:hidden;touch-action:none}
 .standalone-profile-shell :is(button,a,input):focus-visible{outline:2px solid var(--lime);outline-offset:3px;}
 
 @media(max-width:600px){.standalone-profile-shell>.profile-page{padding:18px 14px 40px}.standalone-profile-shell .profile-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.standalone-profile-shell .profile-stats button{padding:11px}.standalone-profile-shell .profile-hero{flex-wrap:wrap}.standalone-profile-shell .profile-follow-button{margin-left:auto}}
+
+.profile-load-more{justify-self:center;min-height:42px;padding:9px 16px;border:1px solid var(--line);border-radius:9px;background:var(--panel);color:var(--text);font:inherit;cursor:pointer}.profile-load-more:hover:not(:disabled){border-color:var(--lime);color:var(--lime)}.profile-load-more:disabled{opacity:.65;cursor:wait}.profile-load-more:focus-visible{outline:2px solid var(--lime);outline-offset:2px}

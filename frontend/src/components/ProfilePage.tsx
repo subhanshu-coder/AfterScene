@@ -29,7 +29,7 @@ export default function ProfilePage({ profileId, userId, onBack, onToast, onOpen
   const profile = useQuery({
     queryKey: ['profile-page', profileId, userId, postPages, reviewPages],
     enabled: Boolean(supabase),
-    placeholderData: (previous) => previous,
+    placeholderData: (previous) => previous?.user.id === profileId ? previous : undefined,
     queryFn: async () => {
       if (!supabase) throw new Error('Profile service is not configured.');
       const [{ data: user, error: userError }, followResult] = await Promise.all([
@@ -55,7 +55,7 @@ export default function ProfilePage({ profileId, userId, onBack, onToast, onOpen
   const linkedProfiles = useQuery({
     queryKey: ['profile-links', profileId, tab, connectionPages],
     enabled: Boolean(supabase && (tab === 'followers' || tab === 'following')),
-    placeholderData: (previous) => previous,
+    placeholderData: (previous, previousQuery) => previousQuery?.queryKey[2] === tab ? previous : undefined,
     queryFn: async () => {
       if (!supabase) return [] as LinkProfile[];
       const column = tab === 'followers' ? 'follower_id' : 'followed_id';
