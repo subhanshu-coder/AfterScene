@@ -1,5 +1,8 @@
 import type { MovieResponse } from '../types/movie';
 
+type MovieApiError = { error?: { message?: string } };
+type MovieApiParams = Record<string, string | number | undefined>;
+
 const apiBase = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL ?? 'http://localhost:4000').replace(/\/+$/, '').replace(/\/api$/, '');
 
 async function readJson<T>(response: Response): Promise<T> {
