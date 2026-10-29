@@ -65,8 +65,6 @@ export const getMovieSchedule = async (bucket: ScheduleBucket, year: number, sig
 export type MovieTrailer = { id: number; title: string; poster_path: string | null; release_date: string; key: string; name: string };
 
 export const getMovieTrailers = async (signal?: AbortSignal): Promise<MovieTrailer[]> => {
-  const response = await fetch(`${apiBase}/api/movies/trailers`, { signal });
-  const body = await readJson<{ results?: MovieTrailer[]; error?: { message?: string } }>(response);
-  if (!response.ok) throw new Error(body.error?.message ?? 'Trailers could not be loaded.');
+  const body = await requestMovieApi<{ results?: MovieTrailer[] } & MovieApiError>('trailers', {}, signal, 'Trailers could not be loaded.');
   return body.results ?? [];
 };
