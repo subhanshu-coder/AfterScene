@@ -52,12 +52,8 @@ export const getStreamingMovies = async (provider: string, signal?: AbortSignal)
 
 const hotstarProvider = 'Hotstar';
 export const getHotstarMovies = (signal?: AbortSignal) => getStreamingMovies(hotstarProvider, signal);
-export const getMoodMovies = async (genreId: number, signal?: AbortSignal): Promise<MovieResponse> => {
-  const response = await fetch(`${apiBase}/api/movies/mood?genre=${genreId}`, { signal });
-  const body = await readJson<MovieResponse & { error?: { message?: string } }>(response);
-  if (!response.ok) throw new Error(body.error?.message ?? 'Mood picks could not be loaded.');
-  return body;
-};
+export const getMoodMovies = (genreId: number, signal?: AbortSignal): Promise<MovieResponse> =>
+  requestMovieApi<MovieResponse & MovieApiError>('mood', { genre: genreId }, signal, 'Mood picks could not be loaded.');
 
 export type ScheduleBucket = 'released' | 'today' | 'upcoming' | 'announced';
 export type ScheduleMedia = 'movie' | 'tv' | 'anime';
