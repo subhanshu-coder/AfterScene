@@ -8,7 +8,10 @@ const apiBase = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL ?? 'ht
 function movieApiUrl(path: string, params: MovieApiParams = {}) {
   const url = new URL(`${apiBase}/api/movies/${path.replace(/^\/+/, '')}`, window.location.origin);
   for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined) url.searchParams.set(key, String(value));
+    if (value !== undefined) {
+      if (typeof value === 'number' && !Number.isFinite(value)) throw new Error('Movie filters must use valid numbers.');
+      url.searchParams.set(key, String(value));
+    }
   }
   return url;
 }
