@@ -5,6 +5,14 @@ type MovieApiParams = Record<string, string | number | undefined>;
 
 const apiBase = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL ?? 'http://localhost:4000').replace(/\/+$/, '').replace(/\/api$/, '');
 
+function movieApiUrl(path: string, params: MovieApiParams = {}) {
+  const url = new URL(`${apiBase}/api/movies/${path.replace(/^\\/+/, '')}`, window.location.origin);
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined) url.searchParams.set(key, String(value));
+  }
+  return url;
+}
+
 async function readJson<T>(response: Response): Promise<T> {
   const contentType = response.headers.get('content-type') ?? '';
   if (!contentType.includes('application/json') && !contentType.includes('+json')) {
