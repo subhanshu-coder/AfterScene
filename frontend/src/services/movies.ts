@@ -6,7 +6,7 @@ type MovieApiParams = Record<string, string | number | undefined>;
 const apiBase = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL ?? 'http://localhost:4000').replace(/\/+$/, '').replace(/\/api$/i, '');
 
 function movieApiUrl(path: string, params: MovieApiParams = {}) {
-  const url = new URL(`${apiBase}/api/movies/${path.replace(/^\\/+/, '')}`, window.location.origin);
+  const url = new URL(`${apiBase}/api/movies/${path.replace(/^\/+/, '')}`, window.location.origin);
   for (const [key, value] of Object.entries(params)) {
     if (value !== undefined) url.searchParams.set(key, String(value));
   }
@@ -34,7 +34,10 @@ async function requestMovieApi<T extends MovieApiError>(path: string, params: Mo
     throw new Error('The movie service could not be reached. Check your connection and try again.');
   }
   const body = await readJson<T>(response);
-  if (!response.ok) throw new Error(body.error?.message ?? fallback);
+  if (!response.ok) {
+    const unavailable = response.status === 503 ? 'Movie data is temporarily unavailable. Check the backend configuration.' : fallback;
+    throw new Error(body.error?.message ?? unavailable);
+  }
   return body;
 }
 
