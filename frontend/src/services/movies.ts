@@ -43,7 +43,7 @@ async function getMovies(path: string, signal?: AbortSignal, params: MovieApiPar
 }
 
 export const discoverMovies = (signal?: AbortSignal, page = 1) => getMovies('trending', signal, { page });
-export const searchMovies = (query: string, signal?: AbortSignal) => getMovies(`search?q=${encodeURIComponent(query)}`, signal);
+export const searchMovies = (query: string, signal?: AbortSignal) => getMovies('search', signal, { q: query });
 export const getAnime = (signal?: AbortSignal) => getMovies('anime', signal);
 export const getStreamingMovies = async (provider: string, signal?: AbortSignal): Promise<{ providerName: string | null; results: MovieResponse['results'] }> => {
   const response = await fetch(`${apiBase}/api/movies/streaming?provider=${encodeURIComponent(provider)}`, { signal });
