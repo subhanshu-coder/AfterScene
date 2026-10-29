@@ -46,9 +46,7 @@ export const discoverMovies = (signal?: AbortSignal, page = 1) => getMovies('tre
 export const searchMovies = (query: string, signal?: AbortSignal) => getMovies('search', signal, { q: query });
 export const getAnime = (signal?: AbortSignal) => getMovies('anime', signal);
 export const getStreamingMovies = async (provider: string, signal?: AbortSignal): Promise<{ providerName: string | null; results: MovieResponse['results'] }> => {
-  const response = await fetch(`${apiBase}/api/movies/streaming?provider=${encodeURIComponent(provider)}`, { signal });
-  const body = await readJson<{ providerName?: string | null; results?: MovieResponse['results']; error?: { message?: string } }>(response);
-  if (!response.ok) throw new Error(body.error?.message ?? 'Streaming picks could not be loaded.');
+  const body = await requestMovieApi<{ providerName?: string | null; results?: MovieResponse['results'] } & MovieApiError>('streaming', { provider }, signal, 'Streaming picks could not be loaded.');
   return { providerName: body.providerName ?? null, results: body.results ?? [] };
 };
 
