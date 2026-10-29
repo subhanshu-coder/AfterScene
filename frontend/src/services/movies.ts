@@ -39,15 +39,7 @@ async function requestMovieApi<T extends MovieApiError>(path: string, params: Mo
 }
 
 async function getMovies(path: string, signal?: AbortSignal, params: MovieApiParams = {}): Promise<MovieResponse> {
-  const url = new URL(`${apiBase}/api/movies/${path}`, window.location.origin);
-  if (page) url.searchParams.set('page', String(page));
-  const response = await fetch(url, { signal });
-  if (!response.ok) {
-    const body = await readJson<{ error?: { message?: string } }>(response).catch(() => null);
-    if (response.status === 503) throw new Error(body?.error?.message ?? 'Add TMDB_API_KEY to the backend environment to enable movie discovery.');
-    throw new Error(body?.error?.message ?? 'Movie data could not be loaded. Please try again.');
-  }
-  return readJson<MovieResponse>(response);
+  return requestMovieApi<MovieResponse & MovieApiError>(path, params, signal, 'Movie data could not be loaded. Please try again.');
 }
 
 export const discoverMovies = (signal?: AbortSignal, page = 1) => getMovies('trending', signal, page);
