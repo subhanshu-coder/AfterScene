@@ -59,12 +59,7 @@ export type ScheduleBucket = 'released' | 'today' | 'upcoming' | 'announced';
 export type ScheduleMedia = 'movie' | 'tv' | 'anime';
 
 export const getMovieSchedule = async (bucket: ScheduleBucket, year: number, signal?: AbortSignal, page = 1, media: ScheduleMedia = 'movie'): Promise<MovieResponse> => {
-  const response = await fetch(`${apiBase}/api/movies/schedule?bucket=${bucket}&year=${year}&page=${page}&media=${media}`, { signal });
-  if (!response.ok) {
-    const body = await response.json().catch(() => null) as { error?: { message?: string } } | null;
-    throw new Error(body?.error?.message ?? 'The release schedule could not be loaded.');
-  }
-  return response.json() as Promise<MovieResponse>;
+  return requestMovieApi<MovieResponse & MovieApiError>('schedule', { bucket, year, page, media }, signal, 'The release schedule could not be loaded.');
 };
 
 export type MovieTrailer = { id: number; title: string; poster_path: string | null; release_date: string; key: string; name: string };
