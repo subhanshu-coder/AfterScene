@@ -25,7 +25,20 @@ async function readJson<T>(response: Response): Promise<T> {
   }
 }
 
-async function getMovies(path: string, signal?: AbortSignal, page?: number): Promise<MovieResponse> {
+async function requestMovieApi<T extends MovieApiError>(path: string, params: MovieApiParams, signal: AbortSignal | undefined, fallback: string): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(movieApiUrl(path, params), { method: 'GET', signal });
+  } catch (error) {
+    if (signal?.aborted) throw error;
+    throw new Error('The movie service could not be reached. Check your connection and try again.');
+  }
+  const body = await readJson<T>(response);
+  if (!response.ok) throw new Error(body.error?.message ?? fallback);
+  return body;
+}
+
+async function getMovies(path: string, signal?: AbortSignal, params: MovieApiParams = {}): Promise<MovieResponse> {
   const url = new URL(`${apiBase}/api/movies/${path}`, window.location.origin);
   if (page) url.searchParams.set('page', String(page));
   const response = await fetch(url, { signal });
