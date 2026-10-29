@@ -18,7 +18,11 @@ async function readJson<T>(response: Response): Promise<T> {
   if (!contentType.includes('application/json') && !contentType.includes('+json')) {
     throw new Error('The movie API returned a web page instead of JSON. Check the Vercel API proxy and Render backend.');
   }
-  return response.json() as Promise<T>;
+  try {
+    return await response.json() as T;
+  } catch {
+    throw new Error('The movie service returned invalid JSON. Please try again.');
+  }
 }
 
 async function getMovies(path: string, signal?: AbortSignal, page?: number): Promise<MovieResponse> {
