@@ -50,7 +50,8 @@ export const getStreamingMovies = async (provider: string, signal?: AbortSignal)
   return { providerName: body.providerName ?? null, results: body.results ?? [] };
 };
 
-export const getHotstarMovies = (signal?: AbortSignal) => getStreamingMovies('Hotstar', signal);
+const hotstarProvider = 'Hotstar';
+export const getHotstarMovies = (signal?: AbortSignal) => getStreamingMovies(hotstarProvider, signal);
 export const getMoodMovies = async (genreId: number, signal?: AbortSignal): Promise<MovieResponse> => {
   const response = await fetch(`${apiBase}/api/movies/mood?genre=${genreId}`, { signal });
   const body = await readJson<MovieResponse & { error?: { message?: string } }>(response);
