@@ -42,7 +42,7 @@ async function getMovies(path: string, signal?: AbortSignal, params: MovieApiPar
   return requestMovieApi<MovieResponse & MovieApiError>(path, params, signal, 'Movie data could not be loaded. Please try again.');
 }
 
-export const discoverMovies = (signal?: AbortSignal, page = 1) => getMovies('trending', signal, page);
+export const discoverMovies = (signal?: AbortSignal, page = 1) => getMovies('trending', signal, { page });
 export const searchMovies = (query: string, signal?: AbortSignal) => getMovies(`search?q=${encodeURIComponent(query)}`, signal);
 export const getAnime = (signal?: AbortSignal) => getMovies('anime', signal);
 export const getStreamingMovies = async (provider: string, signal?: AbortSignal): Promise<{ providerName: string | null; results: MovieResponse['results'] }> => {
