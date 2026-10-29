@@ -3,7 +3,7 @@ import type { MovieResponse } from '../types/movie';
 type MovieApiError = { error?: { message?: string } };
 type MovieApiParams = Record<string, string | number | undefined>;
 
-const apiBase = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL ?? 'http://localhost:4000').replace(/\/+$/, '').replace(/\/api$/, '');
+const apiBase = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL ?? 'http://localhost:4000').replace(/\/+$/, '').replace(/\/api$/i, '');
 
 function movieApiUrl(path: string, params: MovieApiParams = {}) {
   const url = new URL(`${apiBase}/api/movies/${path.replace(/^\\/+/, '')}`, window.location.origin);
