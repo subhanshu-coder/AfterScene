@@ -74,9 +74,16 @@ export async function getMovieSchedule(bucket: ScheduleBucket, year: number, pag
     const message = response.status === 401 ? 'TMDB rejected the configured API key.' : response.status === 429 ? 'TMDB is temporarily rate-limiting requests.' : 'The release schedule could not be loaded from TMDB.';
     throw Object.assign(new Error(message), { statusCode });
   }
-  const body = await response.json() as { results?: (Record<string, unknown> & { id: number; title?: string; name?: string; overview?: string; poster_path?: string | null; backdrop_path?: string | null; release_date?: string; first_air_date?: string; vote_average?: number; genre_ids?: number[] })[]; page?: number; total_pages?: number; total_results?: number };
+
+  let body: { results?: (Record<string, unknown> & { id: number; title?: string; name?: string; overview?: string; poster_path?: string | null; backdrop_path?: string | null; release_date?: string; first_air_date?: string; vote_average?: number; genre_ids?: number[] })[]; page?: number; total_pages?: number; total_results?: number };
+  try {
+    body = await response.json() as typeof body;
+  } catch {
+    throw Object.assign(new Error('TMDB returned an unreadable release schedule. Try again shortly.'), { statusCode: 502 });
+  }
+
   const result: ScheduleResponse = {
-    results: (body.results ?? []).map((item) => ({
+    results: (Array.isArray(body.results) ? body.results : []).map((item) => ({
       id: item.id,
       title: String(isTv ? item.name ?? '' : item.title ?? ''),
       overview: String(item.overview ?? ''),
