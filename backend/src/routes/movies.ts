@@ -10,12 +10,12 @@ import { getCommunityVerdict, getUserMovieState, listWatchlist, removeFromWatchl
 import { requireUser } from '../middleware/auth.js';
 
 const router = Router();
-const movieSearchLimit = rateLimit({ windowMs: 60_000, limit: 40, standardHeaders: 'draft-7', legacyHeaders: false, message: { error: { code: 'RATE_LIMITED', message: 'Too many searches. Take a moment and try again.' } } });
+const movieSearchLimit = rateLimit({ windowMs: 60_000, limit: 40, standardHeaders: 'draft-7', legacyHeaders: false, message: { error: { code: 'RATE_LIMITED', message: 'Too many movie requests. Take a moment and try again.' } } });
 
 router.get('/trending', trending);
 router.get('/mood', movieSearchLimit, mood);
 router.get('/streaming', movieSearchLimit, streaming);
-router.get('/schedule', schedule);
+router.get('/schedule', movieSearchLimit, schedule);
 router.get('/trailers', movieSearchLimit, trailers);
 router.get('/anime', movieSearchLimit, anime);
 router.get('/hotstar', movieSearchLimit, hotstar);
