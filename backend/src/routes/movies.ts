@@ -12,7 +12,7 @@ import { requireUser } from '../middleware/auth.js';
 const router = Router();
 const movieSearchLimit = rateLimit({ windowMs: 60_000, limit: 40, standardHeaders: 'draft-7', legacyHeaders: false, message: { error: { code: 'RATE_LIMITED', message: 'Too many movie requests. Take a moment and try again.' } } });
 
-router.get('/trending', trending);
+router.get('/trending', movieSearchLimit, trending);
 router.get('/mood', movieSearchLimit, mood);
 router.get('/streaming', movieSearchLimit, streaming);
 router.get('/schedule', movieSearchLimit, schedule);
@@ -23,7 +23,7 @@ router.get('/watchlist/me', requireUser, listWatchlist);
 router.get('/:tmdbId/community-score', getCommunityVerdict);
 router.put('/:tmdbId/verdict', requireUser, setCommunityVerdict);
 router.get('/search', movieSearchLimit, search);
-router.get('/:tmdbId', detail);
+router.get('/:tmdbId', movieSearchLimit, detail);
 router.get('/:tmdbId/me', requireUser, getUserMovieState);
 router.put('/:tmdbId/rating', requireUser, setRating);
 router.put('/:tmdbId/watchlist', requireUser, setWatchlistStatus);
