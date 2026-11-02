@@ -15,7 +15,11 @@ export async function detail(request: Request, response: Response, next: NextFun
 export async function trending(request: Request, response: Response, next: NextFunction) {
   const parsed = pageSchema.safeParse(request.query.page ?? 1);
   if (!parsed.success) return response.status(400).json({ error: { code: 'INVALID_PAGE', message: 'Page must be between 1 and 500.' } });
-  try { response.json(await getMovies('trending', undefined, parsed.data)); } catch (error) { next(error); }
+  try {
+    const result = await getMovies('trending', undefined, parsed.data);
+    response.setHeader('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=120');
+    response.json(result);
+  } catch (error) { next(error); }
 }
 
 export async function search(request: Request, response: Response, next: NextFunction) {
