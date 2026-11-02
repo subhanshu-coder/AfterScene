@@ -9,7 +9,11 @@ const pageSchema = z.coerce.number().int().min(1).max(500).default(1);
 export async function detail(request: Request, response: Response, next: NextFunction) {
   const parsed = idSchema.safeParse(request.params.tmdbId);
   if (!parsed.success) return response.status(400).json({ error: { code: 'INVALID_MOVIE_ID', message: 'Movie ID must be a positive number.' } });
-  try { response.json(await getMovieDetail(parsed.data)); } catch (error) { next(error); }
+  try {
+    const result = await getMovieDetail(parsed.data);
+    response.setHeader('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=120');
+    response.json(result);
+  } catch (error) { next(error); }
 }
 
 export async function trending(request: Request, response: Response, next: NextFunction) {
