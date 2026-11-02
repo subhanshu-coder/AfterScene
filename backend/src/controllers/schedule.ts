@@ -13,7 +13,9 @@ export async function schedule(request: Request, response: Response, next: NextF
   const parsed = scheduleQuery.safeParse(request.query);
   if (!parsed.success) return response.status(400).json({ error: { code: 'INVALID_SCHEDULE_FILTER', message: 'Choose a valid title type, release category, and year.' } });
   try {
-    response.json(await getMovieSchedule(parsed.data.bucket, parsed.data.year, parsed.data.page, parsed.data.media));
+    const result = await getMovieSchedule(parsed.data.bucket, parsed.data.year, parsed.data.page, parsed.data.media);
+    response.setHeader('Cache-Control', 'public, max-age=60, s-maxage=600, stale-while-revalidate=300');
+    response.json(result);
   } catch (error) {
     next(error);
   }
