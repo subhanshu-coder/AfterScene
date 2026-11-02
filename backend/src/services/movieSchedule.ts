@@ -82,21 +82,23 @@ export async function getMovieSchedule(bucket: ScheduleBucket, year: number, pag
     throw Object.assign(new Error('TMDB returned an unreadable release schedule. Try again shortly.'), { statusCode: 502 });
   }
 
+  const validResults = (Array.isArray(body.results) ? body.results : [])
+    .filter((item) => item && Number.isSafeInteger(item.id) && item.id > 0);
   const result: ScheduleResponse = {
-    results: (Array.isArray(body.results) ? body.results : []).map((item) => ({
+    results: validResults.map((item) => ({
       id: item.id,
       title: String(isTv ? item.name ?? '' : item.title ?? ''),
       overview: String(item.overview ?? ''),
-      poster_path: item.poster_path ?? null,
-      backdrop_path: item.backdrop_path ?? null,
+      poster_path: typeof item.poster_path === 'string' ? item.poster_path : null,
+      backdrop_path: typeof item.backdrop_path === 'string' ? item.backdrop_path : null,
       release_date: String(isTv ? item.first_air_date ?? '' : item.release_date ?? ''),
-      vote_average: Number(item.vote_average ?? 0),
-      genre_ids: item.genre_ids ?? [],
+      vote_average: Number.isFinite(Number(item.vote_average)) ? Number(item.vote_average) : 0,
+      genre_ids: Array.isArray(item.genre_ids) ? item.genre_ids.filter((genre): genre is number => Number.isSafeInteger(genre)) : [],
       media_type: isTv ? 'tv' : 'movie',
     })),
-    page: body.page ?? page,
-    total_pages: body.total_pages ?? 0,
-    total_results: body.total_results ?? 0,
+    page: Number.isSafeInteger(body.page) && Number(body.page) > 0 ? Number(body.page) : page,
+    total_pages: Number.isSafeInteger(body.total_pages) && Number(body.total_pages) >= 0 ? Number(body.total_pages) : 0,
+    total_results: Number.isSafeInteger(body.total_results) && Number(body.total_results) >= 0 ? Number(body.total_results) : 0,
   };
   cache.set(cacheKey, { expires: Date.now() + cacheTtl, response: result });
   if (cache.size > 100) {
