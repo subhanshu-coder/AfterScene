@@ -19,5 +19,9 @@ export async function streaming(request: Request, response: Response, next: Next
 export async function mood(request: Request, response: Response, next: NextFunction) {
   const parsed = genreSchema.safeParse(request.query.genre);
   if (!parsed.success) return response.status(400).json({ error: { code: 'INVALID_MOOD', message: 'Choose a valid movie mood.' } });
-  try { response.json(await getMoodMovies(parsed.data)); } catch (error) { next(error); }
+  try {
+    const result = await getMoodMovies(parsed.data);
+    setPublicMovieCache(response);
+    response.json(result);
+  } catch (error) { next(error); }
 }
