@@ -26,7 +26,7 @@ Base path: `/api`. Errors use `{ "error": { "code": "...", "message": "..." } }`
 | GET | `/api/movies/mood` | `genre` | Popular movies for a TMDB genre |
 | GET | `/api/movies/:tmdbId/community-score` | — | Community verdict counts and score |
 
-The schedule `bucket` is one of `released`, `today`, `upcoming`, or `announced`. `year` must be an integer from 1900 to 2100; `page` is 1–500; `media` is `movie`, `tv`, or `anime`. Schedule, search, streaming, mood, trailer, anime, Hotstar, trending, and detail endpoints are rate limited. Trending, detail, and schedule responses use public CDN caching with short browser lifetimes and longer shared-cache lifetimes. Schedule responses are cached for ten minutes in the backend; other TMDB results use a five-minute in-process cache.
+The schedule `bucket` is one of `released`, `today`, `upcoming`, or `announced`. `year` must be an integer from 1900 to 2100; `page` is 1–500; `media` is `movie`, `tv`, or `anime`. All public movie and discovery reads are rate limited. Public catalog responses use 60-second browser caching, five-minute shared CDN caching, and stale-while-revalidate. Schedule data additionally uses a ten-minute in-process cache; other TMDB lookups use a five-minute in-process cache. The community score endpoint remains uncached at the CDN because it can reflect access-controlled database rows.
 
 ## User movie actions
 
