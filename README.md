@@ -36,7 +36,7 @@ Set `TMDB_API_KEY`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` (or `SUPABASE_ANO
 - `GET /api/movies/trending` — cached weekly trending films
 - `GET /api/movies/search?q=...` — validated, rate limited movie search
 
-Responses from the API provider are cached in process memory for five minutes. This cache is bounded and appropriate for the initial single-instance setup; move it to a shared cache when deploying multiple API instances.
+The backend caches TMDB responses in process memory for five minutes, with a ten-minute cache for release schedules. Public trending, details, schedule, streaming, mood, anime, Hotstar, and trailer responses also use short browser and shared CDN cache lifetimes. Authenticated user data is never served with public cache headers. Per-instance memory is bounded; shared CDN caching helps reduce repeated TMDB requests across serverless instances.
 
 ## Database and security
 
