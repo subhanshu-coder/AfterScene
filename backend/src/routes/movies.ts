@@ -20,7 +20,7 @@ router.get('/trailers', movieSearchLimit, trailers);
 router.get('/anime', movieSearchLimit, anime);
 router.get('/hotstar', movieSearchLimit, hotstar);
 router.get('/watchlist/me', requireUser, listWatchlist);
-router.get('/:tmdbId/community-score', getCommunityVerdict);
+router.get('/:tmdbId/community-score', movieSearchLimit, getCommunityVerdict);
 router.put('/:tmdbId/verdict', requireUser, setCommunityVerdict);
 router.get('/search', movieSearchLimit, search);
 router.get('/:tmdbId', movieSearchLimit, detail);
