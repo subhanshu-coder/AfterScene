@@ -11,6 +11,8 @@ Configure variables for the correct Vercel service and environment:
 
 Never add a service-role key to a `VITE_*` variable. Supabase publishable/anon keys are public and must be protected by RLS. Run all migrations against the intended Supabase project before enabling the related feature. Configure Google OAuth redirect URLs and email auth URLs for the Vercel site domain.
 
+Public catalog responses return explicit `Cache-Control` headers so Vercel's shared cache can reuse popular TMDB discovery results. The browser cache is short; the shared cache uses a five-minute lifetime with stale-while-revalidate. User-scoped watchlist, rating, and profile responses must remain outside public caching. In-process TMDB caches are per backend instance, so shared CDN caching also reduces repeated requests when serverless instances do not share memory.
+
 ## Docker
 
 The multi-stage Dockerfiles build a static Nginx frontend and a non-root Node API. `docker compose up --build` serves the product at `http://localhost:8080` and proxies `/api` to the backend. Supabase remains hosted; Docker Compose does not start a local database.
