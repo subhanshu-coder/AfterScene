@@ -158,7 +158,9 @@ async function getCollections(): Promise<Collection[]> {
     supabase.from('collection_items').select('collection_id').in('collection_id', rows.map((row) => row.id)),
   ]);
   if (items.error) throw new Error(databaseMessage(items.error));
-  return rows.map((row) => ({ ...row, profile: profiles.get(row.owner_id), items: (items.data ?? []).filter((item) => item.collection_id === row.id).length })) as Collection[];
+  const itemCounts = new Map<string, number>();
+  for (const item of items.data ?? []) itemCounts.set(item.collection_id, (itemCounts.get(item.collection_id) ?? 0) + 1);
+  return rows.map((row) => ({ ...row, profile: profiles.get(row.owner_id), items: itemCounts.get(row.id) ?? 0 })) as Collection[];
 }
 
 export default function CommunityFeed({ userId, onSignIn, onOpenMovie, onOpenProfile }: { userId: string | null; onSignIn: () => void; onOpenMovie: (movie: Movie) => void; onOpenProfile: (profileId: string) => void }) {
