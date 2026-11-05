@@ -210,6 +210,7 @@ export default function CommunityFeed({ userId, onSignIn, onOpenMovie, onOpenPro
     if (postFeedActive) channel.on('postgres_changes', { event: '*', schema: 'public', table: 'post_reactions' }, () => refresh(['community-posts']));
     if (postFeedActive) channel.on('postgres_changes', { event: '*', schema: 'public', table: 'post_reposts' }, () => refresh(['community-posts']));
     if (postFeedActive) channel.on('postgres_changes', { event: '*', schema: 'public', table: 'follows' }, () => refresh(['community-posts']));
+    if (reviewFeedActive) channel.on('postgres_changes', { event: '*', schema: 'public', table: 'review_comments' }, () => refresh(['community-reviews']));
     channel.subscribe();
     return () => {
       if (refreshTimer) clearTimeout(refreshTimer);
