@@ -133,7 +133,7 @@ async function getReviews(): Promise<Review[]> {
       if (result.error) throw new Error(databaseMessage(result.error));
       return new Map((result.data ?? []).map((movie) => [movie.id, movie]));
     })(),
-    supabase.from('review_comments').select('id,review_id,author_id,body,created_at').in('review_id', items.map((item) => item.id)).order('created_at', { ascending: true }),
+    supabase.from('review_comments').select('id,review_id,author_id,body,created_at').in('review_id', items.map((item) => item.id)).order('created_at', { ascending: true }).limit(300),
   ]);
   if (commentResult.error) throw new Error(databaseMessage(commentResult.error));
   const commentRows = commentResult.data ?? [];
