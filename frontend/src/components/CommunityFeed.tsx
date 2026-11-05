@@ -202,7 +202,7 @@ export default function CommunityFeed({ userId, onSignIn, onOpenMovie, onOpenPro
         const { error: uploadError } = await supabase.storage.from('post-images').upload(imagePath, selectedImage, { contentType: selectedImage.type, upsert: false });
         if (uploadError) throw uploadError;
       }
-      const { error } = await supabase.from('posts').insert({ author_id: userId, kind, body: body.trim() || null, image_path: imagePath });
+      const { error } = await supabase.from('posts').insert({ author_id: userId, kind, body: body.trim() || null, image_path: imagePath, is_spoiler: spoiler });
       if (error) throw error;
       setBody('');
       setSelectedImage(null);
