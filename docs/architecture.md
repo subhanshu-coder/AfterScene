@@ -20,3 +20,10 @@ The service role is only used by server routes after the caller’s access token
 - `supabase/migrations` is the source of truth for schema and policies.
 
 TMDB cache is process-local, bounded, and expires after five minutes. Use a shared cache only when multiple API instances need coherent reuse.
+
+
+## Community feed refresh and query bounds
+
+The community view subscribes to Supabase Realtime only while a relevant lane is active. Feed, Discussions, and Trending watch post-related changes; Reviews and Collections watch their own data. Changes are debounced before invalidating the matching TanStack Query key, and the subscription and pending timer are removed when the lane changes or unmounts. This keeps idle screens unsubscribed and avoids a separate refresh for every row in a burst.
+
+Community reads remain bounded: the feed fetches a fixed page of posts and a capped comment set; review replies and collection items also have explicit caps. Reply groups and collection item totals are computed in a single pass on the client. If these lanes need deeper histories, add cursor pagination rather than raising the caps without limit.
