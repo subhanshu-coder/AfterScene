@@ -57,7 +57,7 @@ async function getPosts(space: Space, userId: string | null): Promise<Post[]> {
     getProfiles(authorIds),
     supabase.from('post_reactions').select('post_id,user_id,reaction').in('post_id', ids),
     supabase.from('post_reposts').select('post_id,user_id').in('post_id', ids),
-    supabase.from('comments').select('id,post_id,author_id,body,parent_id,created_at').in('post_id', ids).order('created_at', { ascending: true }),
+    supabase.from('comments').select('id,post_id,author_id,body,parent_id,created_at').in('post_id', ids).order('created_at', { ascending: true }).limit(500),
     userId ? supabase.from('follows').select('followed_id').eq('follower_id', userId) : Promise.resolve({ data: [], error: null }),
   ]);
   if (reactionsResult.error) throw new Error(databaseMessage(reactionsResult.error));
