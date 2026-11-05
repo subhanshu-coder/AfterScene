@@ -192,7 +192,8 @@ export default function CommunityFeed({ userId, onSignIn, onOpenMovie, onOpenPro
   const currentNews = newsLane === 'releases' ? news : newsLane === 'series' ? series : anime;
 
   useEffect(() => {
-    if (!supabase) return;
+    const supabaseClient = supabase;
+    if (!supabaseClient) return;
     const postFeedActive = space === 'Feed' || space === 'Discussions' || space === 'Trending';
     const reviewFeedActive = space === 'Reviews';
     const collectionFeedActive = space === 'Collections';
@@ -202,7 +203,7 @@ export default function CommunityFeed({ userId, onSignIn, onOpenMovie, onOpenPro
       if (refreshTimer) clearTimeout(refreshTimer);
       refreshTimer = setTimeout(() => { void client.invalidateQueries({ queryKey }); }, 120);
     };
-    const channel = supabase.channel(`community-${space.toLowerCase()}-${userId ?? 'guest'}`);
+    const channel = supabaseClient.channel(`community-${space.toLowerCase()}-${userId ?? 'guest'}`);
     if (postFeedActive) channel.on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => refresh(['community-posts']));
     if (reviewFeedActive) channel.on('postgres_changes', { event: '*', schema: 'public', table: 'reviews' }, () => refresh(['community-reviews']));
     if (collectionFeedActive) channel.on('postgres_changes', { event: '*', schema: 'public', table: 'collections' }, () => refresh(['community-collections']));
@@ -218,7 +219,7 @@ export default function CommunityFeed({ userId, onSignIn, onOpenMovie, onOpenPro
     channel.subscribe();
     return () => {
       if (refreshTimer) clearTimeout(refreshTimer);
-      void supabase.removeChannel(channel);
+      void supabaseClient.removeChannel(channel);
     };
   }, [client, space, userId]);
 
