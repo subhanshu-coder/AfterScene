@@ -161,6 +161,7 @@ export default function CommunityFeed({ userId, onSignIn, onOpenMovie, onOpenPro
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState('');
   const [kind, setKind] = useState<'opinion' | 'question' | 'discussion' | 'recommendation'>('opinion');
+  const [spoiler, setSpoiler] = useState(false);
   const [notice, setNotice] = useState('');
   const [busyPost, setBusyPost] = useState(false);
   const client = useQueryClient();
