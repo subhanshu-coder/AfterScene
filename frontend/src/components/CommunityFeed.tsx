@@ -137,8 +137,14 @@ async function getReviews(): Promise<Review[]> {
   ]);
   if (commentResult.error) throw new Error(databaseMessage(commentResult.error));
   const commentRows = commentResult.data ?? [];
+  const commentsByReview = new Map<string, typeof commentRows>();
+  for (const comment of commentRows) {
+    const reviewComments = commentsByReview.get(comment.review_id) ?? [];
+    reviewComments.push(comment);
+    commentsByReview.set(comment.review_id, reviewComments);
+  }
   const commentProfiles = await getProfiles(commentRows.map((comment) => comment.author_id));
-  return items.map((item) => ({ ...item, profile: profiles.get(item.author_id), movie: movies.get(item.movie_id), comments: commentRows.filter((comment) => comment.review_id === item.id).map((comment) => ({ ...comment, profile: commentProfiles.get(comment.author_id) })) })) as Review[];
+  return items.map((item) => ({ ...item, profile: profiles.get(item.author_id), movie: movies.get(item.movie_id), comments: (commentsByReview.get(item.id) ?? []).map((comment) => ({ ...comment, profile: commentProfiles.get(comment.author_id) })) })) as Review[];
 }
 
 async function getCollections(): Promise<Collection[]> {
