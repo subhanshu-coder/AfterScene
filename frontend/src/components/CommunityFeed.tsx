@@ -206,6 +206,7 @@ export default function CommunityFeed({ userId, onSignIn, onOpenMovie, onOpenPro
       if (error) throw error;
       setBody('');
       setSelectedImage(null);
+      setSpoiler(false);
       setNotice('Posted');
       void client.invalidateQueries({ queryKey: ['community-posts'] });
     } catch (error) {
