@@ -27,3 +27,8 @@ TMDB cache is process-local, bounded, and expires after five minutes. Use a shar
 The community view subscribes to Supabase Realtime only while a relevant lane is active. Feed, Discussions, and Trending watch post-related changes; Reviews and Collections watch their own data. Changes are debounced before invalidating the matching TanStack Query key, and the subscription and pending timer are removed when the lane changes or unmounts. This keeps idle screens unsubscribed and avoids a separate refresh for every row in a burst.
 
 Community reads remain bounded: the feed fetches a fixed page of posts and a capped comment set; review replies and collection items also have explicit caps. Reply groups and collection item totals are computed in a single pass on the client. If these lanes need deeper histories, add cursor pagination rather than raising the caps without limit.
+
+
+## Community feed pagination and ranking
+
+The community Feed, Discussions, and Trending lanes load posts in 20-row offset pages through TanStack Query infinite queries. A short page ends pagination; users request older posts with the explicit Load more control. Related comments, reactions, reposts, and profile rows are queried only for the current page. The Feed ranks those loaded posts using follow relationships, interaction counts, and recency; Trending uses its separate engagement-velocity score. Ranking is deterministic for the same underlying data and query time.

@@ -13,3 +13,6 @@ Community subscriptions are opened only for the currently visible Feed, Discussi
 ## Bounded community reads
 
 Community queries cap post, comment, review-reply, and collection-item reads. Preserve those caps when editing the feed; use cursor pagination for deeper history. Avoid loading private messages or unrelated profile data through public community subscriptions.
+
+
+Feed pagination is explicit and page bounded. Loading another page fetches only that page and the related interaction rows, rather than requesting the full community history. Feed ordering uses follow state, visible interaction counts, and recency; it does not require sending private account data to an external ranking service. Realtime invalidation can refresh loaded pages when new community activity arrives.
