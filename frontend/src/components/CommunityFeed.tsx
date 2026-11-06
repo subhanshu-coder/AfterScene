@@ -189,6 +189,7 @@ export default function CommunityFeed({ userId, onSignIn, onOpenMovie, onOpenPro
     return () => URL.revokeObjectURL(preview);
   }, [selectedImage]);
   const posts = useInfiniteQuery({ queryKey: ['community-posts', space, userId], enabled: Boolean(supabase && (space === 'Feed' || space === 'Discussions' || space === 'Trending')), initialPageParam: 0, queryFn: ({ pageParam }) => getPosts(space, userId, pageParam), getNextPageParam: (lastPage, pages) => lastPage.length === POST_PAGE_SIZE ? pages.length * POST_PAGE_SIZE : undefined });
+  const feedPosts = posts.data?.pages.flatMap((page) => page) ?? [];
   const reviews = useQuery({ queryKey: ['community-reviews'], enabled: Boolean(supabase && space === 'Reviews'), queryFn: getReviews });
   const collections = useQuery({ queryKey: ['community-collections'], enabled: Boolean(supabase && space === 'Collections'), queryFn: getCollections });
   const trailers = useQuery({ queryKey: ['community-trailers'], enabled: space === 'Trailers', queryFn: ({ signal }) => getMovieTrailers(signal) });
