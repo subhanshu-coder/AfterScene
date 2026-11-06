@@ -52,7 +52,7 @@ function trendingScore(post: Post, now: number) {
   return (post.likes * 2 + post.comments.length * 1.5 + post.reposts * 2) / Math.pow(ageHours + 2, 0.65);
 }
 
-async function getPosts(space: Space, userId: string | null): Promise<Post[]> {
+async function getPosts(space: Space, userId: string | null, offset = 0): Promise<Post[]> {
   if (!supabase) throw new Error('Supabase is not configured for this deployment. Add the VITE_SUPABASE_URL and publishable key.');
   let request = supabase.from('posts').select('id,author_id,kind,body,image_path,is_spoiler,created_at').order('created_at', { ascending: false }).limit(40);
   if (space === 'Discussions') request = request.in('kind', ['discussion', 'question']);
