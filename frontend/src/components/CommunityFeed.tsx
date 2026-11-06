@@ -43,7 +43,8 @@ function forYouScore(post: Post, now: number) {
   const createdAt = Date.parse(post.created_at);
   const ageHours = Number.isFinite(createdAt) ? Math.max(0, (now - createdAt) / 3_600_000) : 24;
   const engagement = post.likes + post.comments.length * 1.5 + post.reposts * 2;
-  return (post.followed ? 3 : 0) + engagement / Math.pow(ageHours + 3, 0.7);
+  const freshness = 1 / Math.pow(ageHours + 1, 0.35);
+  return (post.followed ? 3 : 0) + freshness + engagement / Math.pow(ageHours + 3, 0.7);
 }
 
 function trendingScore(post: Post, now: number) {
