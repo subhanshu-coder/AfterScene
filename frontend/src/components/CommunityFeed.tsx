@@ -14,6 +14,8 @@ type ReviewComment = { id: string; review_id: string; author_id: string; body: s
 type Review = { id: string; author_id: string; movie_id: string; title: string | null; body: string; rating: number; created_at: string; profile?: Profile; movie?: { title: string; tmdb_id: number; poster_path: string | null }; comments: ReviewComment[] };
 type Collection = { id: string; owner_id: string; title: string; description: string; created_at: string; profile?: Profile; items: number };
 
+const POST_PAGE_SIZE = 20;
+
 const spaces: { name: Space; icon: typeof Users }[] = [
   { name: 'Feed', icon: Users }, { name: 'Trending', icon: Flame }, { name: 'News', icon: Newspaper }, { name: 'Discussions', icon: MessageCircle },
   { name: 'Trailers', icon: Video }, { name: 'Reviews', icon: Star }, { name: 'Collections', icon: Bookmark },
