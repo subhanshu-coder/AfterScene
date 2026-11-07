@@ -63,7 +63,7 @@ export default function SchedulePage({ onOpen }: SchedulePageProps) {
       </div>
       <div className="schedule-year-controls"><button type="button" aria-label="Previous year" disabled={year <= FIRST_SCHEDULE_YEAR} onClick={() => changeYear(year - 1)}><ChevronLeft size={16}/></button><label className="schedule-year">Year<select value={year} onChange={(event) => changeYear(Number(event.target.value))>
         {scheduleYears(currentYear).map((option) => <option value={option} key={option}>{option}</option>)}
-      </select></label><button type="button" aria-label="Next year" disabled={year >= currentYear + 5} onClick={() => changeYear(year + 1)}><ChevronRight size={16}/></button>{year !== currentYear && <button className="schedule-current-year" type="button" onClick={() => changeYear(currentYear)}>Current year</button>}</div>
+      </select></label><button type="button" aria-label="Next year" disabled={year >= currentYear + 5} onClick={() => changeYear(year + 1)}><ChevronRight size={16}/></button>{year !== currentYear && <button className="schedule-current-year" type="button" aria-label="Go to the current year" onClick={() => changeYear(currentYear)}>Current year</button>}</div>
     </header>
     <div className="schedule-media-tabs" role="tablist" aria-orientation="horizontal" aria-label="Title type" onKeyDown={handleTabListKeyDown}>
       {mediaOptions.map((option) => <button type="button" role="tab" id={`title-type-${option.id}`} aria-controls="schedule-content" aria-selected={media === option.id} key={option.id} onClick={() => { setMedia(option.id); setPage(1); }}>{option.label}</button>)}
