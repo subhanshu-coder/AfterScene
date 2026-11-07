@@ -73,7 +73,7 @@ export default function SchedulePage({ onOpen }: SchedulePageProps) {
     </div>
     <div id="schedule-content" role="tabpanel" aria-labelledby={`title-type-${media} release-${bucket}`} aria-busy={schedule.isFetching}>
     <div className="schedule-results-heading">
-      <div><h2>{selected.label} {selectedMedia.label.toLowerCase()} in {year}</h2><span>{selected.hint} · real TMDB data · India-local dates</span></div>
+      <div><h2>{selected.label} {selectedMedia.label.toLowerCase()} in {year}</h2><span>{selected.hint} · {bucket === 'released' ? 'popular titles first' : 'soonest dates first'} · real TMDB data · India-local dates</span></div>
       {schedule.data && <span className="schedule-result-count" aria-live="polite">{titleCount} {media === 'movie' ? 'films' : media === 'anime' ? 'anime series' : 'series'}</span>}
     </div>
     {schedule.isPending && <><p className="community-state" role="status" aria-live="polite">Loading release calendar…</p><div className="schedule-grid">{Array.from({ length: 8 }, (_, index) => <div key={index} className="schedule-skeleton"/>)}</div></>}
