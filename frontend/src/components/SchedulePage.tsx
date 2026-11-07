@@ -42,6 +42,10 @@ export default function SchedulePage({ onOpen }: SchedulePageProps) {
   const [bucket, setBucket] = useState<ScheduleBucket>('upcoming');
   const [media, setMedia] = useState<ScheduleMedia>('movie');
   const [page, setPage] = useState(1);
+  const changeYear = (nextYear: number) => {
+    setYear(Math.max(FIRST_SCHEDULE_YEAR, Math.min(currentYear + 5, nextYear)));
+    setPage(1);
+  };
   const schedule = useQuery({
     queryKey: ['title-schedule', media, bucket, year, page],
     queryFn: ({ signal }) => getMovieSchedule(bucket, year, signal, page, media),
