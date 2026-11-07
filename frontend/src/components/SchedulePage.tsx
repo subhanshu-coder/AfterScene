@@ -61,7 +61,7 @@ export default function SchedulePage({ onOpen }: SchedulePageProps) {
         <h1>Movie schedule</h1>
         <p>Browse real release dates for films, series, and anime.</p>
       </div>
-      <div className="schedule-year-controls"><button type="button" aria-label="Previous year" onClick={() => changeYear(year - 1)}><ChevronLeft size={16}/></button><label className="schedule-year">Year<select value={year} onChange={(event) => changeYear(Number(event.target.value))>
+      <div className="schedule-year-controls"><button type="button" aria-label="Previous year" disabled={year <= FIRST_SCHEDULE_YEAR} onClick={() => changeYear(year - 1)}><ChevronLeft size={16}/></button><label className="schedule-year">Year<select value={year} onChange={(event) => changeYear(Number(event.target.value))>
         {scheduleYears(currentYear).map((option) => <option value={option} key={option}>{option}</option>)}
       </select></label><button type="button" onClick={() => changeYear(year + 1)}><ChevronRight size={16}/></button></div>
     </header>
