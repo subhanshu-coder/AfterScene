@@ -61,7 +61,7 @@ export default function SchedulePage({ onOpen }: SchedulePageProps) {
         <h1>Movie schedule</h1>
         <p>Browse real release dates for films, series, and anime.</p>
       </div>
-      <label className="schedule-year">Year<select value={year} onChange={(event) => { setYear(Number(event.target.value)); setPage(1); }}>
+      <label className="schedule-year">Year<select value={year} onChange={(event) => changeYear(Number(event.target.value))>
         {scheduleYears(currentYear).map((option) => <option value={option} key={option}>{option}</option>)}
       </select></label>
     </header>
