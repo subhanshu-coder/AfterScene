@@ -6,10 +6,10 @@ import type { Movie } from '../types/movie';
 
 type SchedulePageProps = { onOpen: (movie: Movie) => void };
 const sections: { id: ScheduleBucket; label: string; icon: typeof CalendarDays; hint: string }[] = [
-  { id: 'released', label: 'Released', icon: Check, hint: 'Popular titles released this year' },
+  { id: 'released', label: 'Released', icon: Check, hint: 'Titles released during the selected year' },
   { id: 'today', label: 'Today', icon: CalendarDays, hint: 'Titles dated for today in India' },
-  { id: 'upcoming', label: 'Upcoming', icon: Clock3, hint: 'The next 90 days' },
-  { id: 'announced', label: 'Announced', icon: Megaphone, hint: 'Release dates beyond the next 90 days' },
+  { id: 'upcoming', label: 'Upcoming', icon: Clock3, hint: 'Dates in the next 90 days within the selected year' },
+  { id: 'announced', label: 'Announced', icon: Megaphone, hint: 'Confirmed dates more than 90 days away' },
 ];
 const scheduleYears = (currentYear: number) => Array.from({ length: currentYear + 6 - 1900 }, (_, index) => currentYear + 5 - index);
 
