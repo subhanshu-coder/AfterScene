@@ -83,7 +83,7 @@ export async function getMovieSchedule(bucket: ScheduleBucket, year: number, pag
   }
 
   const validResults = (Array.isArray(body.results) ? body.results : [])
-    .filter((item) => item && Number.isSafeInteger(item.id) && item.id > 0);
+    .filter((item) => item && Number.isSafeInteger(item.id) && item.id > 0 && typeof (isTv ? item.name : item.title) === 'string' && String(isTv ? item.name : item.title).trim().length > 0);
   const result: ScheduleResponse = {
     results: validResults.map((item) => ({
       id: item.id,
