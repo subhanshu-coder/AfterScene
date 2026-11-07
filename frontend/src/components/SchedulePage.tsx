@@ -11,7 +11,8 @@ const sections: { id: ScheduleBucket; label: string; icon: typeof CalendarDays; 
   { id: 'upcoming', label: 'Upcoming', icon: Clock3, hint: 'Dates in the next 90 days within the selected year' },
   { id: 'announced', label: 'Announced', icon: Megaphone, hint: 'Confirmed dates more than 90 days away' },
 ];
-const scheduleYears = (currentYear: number) => Array.from({ length: currentYear + 6 - 1900 }, (_, index) => currentYear + 5 - index);
+const FIRST_SCHEDULE_YEAR = 1900;
+const scheduleYears = (currentYear: number) => Array.from({ length: currentYear + 6 - FIRST_SCHEDULE_YEAR }, (_, index) => currentYear + 5 - index);
 
 const mediaOptions: { id: ScheduleMedia; label: string }[] = [
   { id: 'movie', label: 'Movies' },
