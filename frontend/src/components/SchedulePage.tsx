@@ -1,6 +1,6 @@
 import { useState, type KeyboardEvent } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { CalendarDays, Check, Clock3, Megaphone, Popcorn } from 'lucide-react';
+import { CalendarDays, Check, ChevronLeft, ChevronRight, Clock3, Megaphone, Popcorn } from 'lucide-react';
 import { getMovieSchedule, type ScheduleBucket, type ScheduleMedia } from '../services/movies';
 import type { Movie } from '../types/movie';
 
