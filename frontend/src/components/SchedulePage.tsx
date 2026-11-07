@@ -1,17 +1,18 @@
 import { useState, type KeyboardEvent } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { CalendarDays, Check, Clock3, Megaphone, Popcorn } from 'lucide-react';
+import { CalendarDays, Check, ChevronLeft, ChevronRight, Clock3, Megaphone, Popcorn } from 'lucide-react';
 import { getMovieSchedule, type ScheduleBucket, type ScheduleMedia } from '../services/movies';
 import type { Movie } from '../types/movie';
 
 type SchedulePageProps = { onOpen: (movie: Movie) => void };
 const sections: { id: ScheduleBucket; label: string; icon: typeof CalendarDays; hint: string }[] = [
-  { id: 'released', label: 'Released', icon: Check, hint: 'Popular titles released this year' },
+  { id: 'released', label: 'Released', icon: Check, hint: 'Titles released during the selected year' },
   { id: 'today', label: 'Today', icon: CalendarDays, hint: 'Titles dated for today in India' },
-  { id: 'upcoming', label: 'Upcoming', icon: Clock3, hint: 'The next 90 days' },
-  { id: 'announced', label: 'Announced', icon: Megaphone, hint: 'Release dates beyond the next 90 days' },
+  { id: 'upcoming', label: 'Upcoming', icon: Clock3, hint: 'Dates in the next 90 days within the selected year' },
+  { id: 'announced', label: 'Announced', icon: Megaphone, hint: 'Confirmed dates more than 90 days away' },
 ];
-const scheduleYears = (currentYear: number) => Array.from({ length: currentYear + 6 - 1900 }, (_, index) => currentYear + 5 - index);
+const FIRST_SCHEDULE_YEAR = 1900;
+const scheduleYears = (currentYear: number) => Array.from({ length: currentYear + 6 - FIRST_SCHEDULE_YEAR }, (_, index) => currentYear + 5 - index);
 
 const mediaOptions: { id: ScheduleMedia; label: string }[] = [
   { id: 'movie', label: 'Movies' },
@@ -41,6 +42,10 @@ export default function SchedulePage({ onOpen }: SchedulePageProps) {
   const [bucket, setBucket] = useState<ScheduleBucket>('upcoming');
   const [media, setMedia] = useState<ScheduleMedia>('movie');
   const [page, setPage] = useState(1);
+  const changeYear = (nextYear: number) => {
+    setYear(Math.max(FIRST_SCHEDULE_YEAR, Math.min(currentYear + 5, nextYear)));
+    setPage(1);
+  };
   const schedule = useQuery({
     queryKey: ['title-schedule', media, bucket, year, page],
     queryFn: ({ signal }) => getMovieSchedule(bucket, year, signal, page, media),
@@ -56,9 +61,9 @@ export default function SchedulePage({ onOpen }: SchedulePageProps) {
         <h1>Movie schedule</h1>
         <p>Browse real release dates for films, series, and anime.</p>
       </div>
-      <label className="schedule-year">Year<select value={year} onChange={(event) => { setYear(Number(event.target.value)); setPage(1); }}>
+      <div className="schedule-year-controls"><button type="button" aria-label="Previous year" disabled={year <= FIRST_SCHEDULE_YEAR} onClick={() => changeYear(year - 1)}><ChevronLeft size={16}/></button><label className="schedule-year">Year<select aria-label="Release schedule year" value={year} onChange={(event) => changeYear(Number(event.target.value))}>
         {scheduleYears(currentYear).map((option) => <option value={option} key={option}>{option}</option>)}
-      </select></label>
+      </select></label><button type="button" aria-label="Next year" disabled={year >= currentYear + 5} onClick={() => changeYear(year + 1)}><ChevronRight size={16}/></button>{year !== currentYear && <button className="schedule-current-year" type="button" aria-label="Go to the current year" onClick={() => changeYear(currentYear)}>Current year</button>}</div>
     </header>
     <div className="schedule-media-tabs" role="tablist" aria-orientation="horizontal" aria-label="Title type" onKeyDown={handleTabListKeyDown}>
       {mediaOptions.map((option) => <button type="button" role="tab" id={`title-type-${option.id}`} aria-controls="schedule-content" aria-selected={media === option.id} key={option.id} onClick={() => { setMedia(option.id); setPage(1); }}>{option.label}</button>)}
@@ -68,7 +73,7 @@ export default function SchedulePage({ onOpen }: SchedulePageProps) {
     </div>
     <div id="schedule-content" role="tabpanel" aria-labelledby={`title-type-${media} release-${bucket}`} aria-busy={schedule.isFetching}>
     <div className="schedule-results-heading">
-      <div><h2>{selected.label} {selectedMedia.label.toLowerCase()} in {year}</h2><span>{selected.hint} · real TMDB data · India-local dates</span></div>
+      <div><h2 aria-live="polite" aria-atomic="true">{selected.label} {selectedMedia.label.toLowerCase()} in {year}</h2><span>{selected.hint} · {bucket === 'released' ? 'popular titles first' : 'soonest dates first'} · real TMDB data · India-local dates</span></div>
       {schedule.data && <span className="schedule-result-count" aria-live="polite">{titleCount} {media === 'movie' ? 'films' : media === 'anime' ? 'anime series' : 'series'}</span>}
     </div>
     {schedule.isPending && <><p className="community-state" role="status" aria-live="polite">Loading release calendar…</p><div className="schedule-grid">{Array.from({ length: 8 }, (_, index) => <div key={index} className="schedule-skeleton"/>)}</div></>}

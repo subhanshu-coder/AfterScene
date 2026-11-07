@@ -55,7 +55,7 @@ export async function getMovieSchedule(bucket: ScheduleBucket, year: number, pag
   url.searchParams.set('language', 'en-US');
   url.searchParams.set(`${dateField}.gte`, from);
   url.searchParams.set(`${dateField}.lte`, to);
-  url.searchParams.set('sort_by', 'popularity.desc');
+  url.searchParams.set('sort_by', bucket === 'released' ? 'popularity.desc' : `${dateField}.asc`);
   url.searchParams.set('page', String(page));
   if (media === 'movie' && bucket !== 'announced') url.searchParams.set('region', 'IN');
   if (media === 'anime') {
@@ -83,7 +83,7 @@ export async function getMovieSchedule(bucket: ScheduleBucket, year: number, pag
   }
 
   const validResults = (Array.isArray(body.results) ? body.results : [])
-    .filter((item) => item && Number.isSafeInteger(item.id) && item.id > 0);
+    .filter((item) => item && Number.isSafeInteger(item.id) && item.id > 0 && typeof (isTv ? item.name : item.title) === 'string' && String(isTv ? item.name : item.title).trim().length > 0);
   const result: ScheduleResponse = {
     results: validResults.map((item) => ({
       id: item.id,
@@ -97,7 +97,7 @@ export async function getMovieSchedule(bucket: ScheduleBucket, year: number, pag
       media_type: isTv ? 'tv' : 'movie',
     })),
     page: Number.isSafeInteger(body.page) && Number(body.page) > 0 ? Number(body.page) : page,
-    total_pages: Number.isSafeInteger(body.total_pages) && Number(body.total_pages) >= 0 ? Number(body.total_pages) : 0,
+    total_pages: Number.isSafeInteger(body.total_pages) && Number(body.total_pages) >= 0 ? Math.min(500, Number(body.total_pages)) : 0,
     total_results: Number.isSafeInteger(body.total_results) && Number(body.total_results) >= 0 ? Number(body.total_results) : 0,
   };
   cache.set(cacheKey, { expires: Date.now() + cacheTtl, response: result });
