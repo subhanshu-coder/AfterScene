@@ -97,7 +97,7 @@ export async function getMovieSchedule(bucket: ScheduleBucket, year: number, pag
       media_type: isTv ? 'tv' : 'movie',
     })),
     page: Number.isSafeInteger(body.page) && Number(body.page) > 0 ? Number(body.page) : page,
-    total_pages: Number.isSafeInteger(body.total_pages) && Number(body.total_pages) >= 0 ? Number(body.total_pages) : 0,
+    total_pages: Number.isSafeInteger(body.total_pages) && Number(body.total_pages) >= 0 ? Math.min(500, Number(body.total_pages)) : 0,
     total_results: Number.isSafeInteger(body.total_results) && Number(body.total_results) >= 0 ? Number(body.total_results) : 0,
   };
   cache.set(cacheKey, { expires: Date.now() + cacheTtl, response: result });
