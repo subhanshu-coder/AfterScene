@@ -40,3 +40,8 @@ The schedule `bucket` is one of `released`, `today`, `upcoming`, or `announced`.
 | PUT | `/api/movies/:tmdbId/verdict` | Yes | Set a community verdict |
 
 All identifiers refer to TMDB IDs. Metadata is fetched from TMDB and cached by the backend; the application does not duplicate the full TMDB catalogue in its database. Search and schedule inputs are validated before upstream requests. Upstream failures return a consistent JSON error response.
+
+
+## Release schedule ordering and bounds
+
+`GET /api/movies/schedule` accepts `bucket` (`released`, `today`, `upcoming`, or `announced`), `year`, `page` (1–500), and `media` (`movie`, `tv`, or `anime`). Date-driven buckets sort by the earliest release date first; released titles retain popularity ordering. The API caps the reported page count at TMDB's supported 500-page traversal limit. Invalid filters return a structured 400 error.
