@@ -51,7 +51,13 @@ export default function MovieDetailDialog({ movie, userName, userId, onClose, on
     if (commentProfilesError) throw new Error('Review replies could not be loaded.');
     const people = new Map((authors ?? []).map((person) => [person.id, person]));
     const replyPeople = new Map((commentProfiles ?? []).map((person) => [person.id, person]));
-    return rows.map((row) => ({ ...row, author: people.get(row.author_id) ?? null, comments: commentRows.filter((comment) => comment.review_id === row.id).map((comment) => ({ ...comment, profile: replyPeople.get(comment.author_id) ?? null })) })) as ReviewEntry[];
+    const repliesByReview = new Map<string, typeof commentRows>();
+    for (const comment of commentRows) {
+      const replies = repliesByReview.get(comment.review_id) ?? [];
+      replies.push(comment);
+      repliesByReview.set(comment.review_id, replies);
+    }
+    return rows.map((row) => ({ ...row, author: people.get(row.author_id) ?? null, comments: (repliesByReview.get(row.id) ?? []).map((comment) => ({ ...comment, profile: replyPeople.get(comment.author_id) ?? null })) })) as ReviewEntry[];
   } });
   const reviewClient = useQueryClient();
   const personalState = useQuery({ queryKey: ['movie', movie.id, 'me'], queryFn: () => getUserMovieState(movie.id), enabled: Boolean(userName), retry: false });
