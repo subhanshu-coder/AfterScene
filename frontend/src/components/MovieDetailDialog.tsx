@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowUpRight, CalendarDays, Check, Clapperboard, Clock3, Heart, LoaderCircle, MessageCircle, Star, X } from 'lucide-react';
 import type { Movie } from '../types/movie';
 import { getUserMovieState, removeWatchlist, saveMovieRating, saveWatchlist, setWatchlistStatus } from '../services/movieActions';
