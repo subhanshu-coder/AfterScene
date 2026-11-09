@@ -17,9 +17,26 @@ const MOVIE_REVIEW_PAGE_SIZE = 20;
 export default function MovieDetailDialog({ movie, userName, userId, onClose, onSignIn, onToast, onOpenProfile }: Props) {
   const dialogRef = useRef<HTMLElement>(null);
   useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', handleEscape);
-    return () => window.removeEventListener('keydown', handleEscape);
+    const dialog = dialogRef.current;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const focusableSelector = 'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    const focusableElements = () => dialog ? Array.from(dialog.querySelectorAll<HTMLElement>(focusableSelector)) : [];
+    (focusableElements()[0] ?? dialog)?.focus();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { onClose(); return; }
+      if (event.key !== 'Tab' || !dialog) return;
+      const elements = focusableElements();
+      if (!elements.length) { event.preventDefault(); dialog.focus(); return; }
+      const first = elements[0];
+      const last = elements[elements.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      previousFocus?.focus();
+    };
   }, [onClose]);
   const [myRating, setMyRating] = useState<number | null>(null);
   const [watchStatus, setWatchStatus] = useState<string | null>(null);
