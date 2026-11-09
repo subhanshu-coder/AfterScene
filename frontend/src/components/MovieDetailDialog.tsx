@@ -1,5 +1,5 @@
-import { useEffect, useState, type FormEvent } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowUpRight, CalendarDays, Check, Clapperboard, Clock3, Heart, LoaderCircle, MessageCircle, Star, X } from 'lucide-react';
 import type { Movie } from '../types/movie';
 import { getUserMovieState, removeWatchlist, saveMovieRating, saveWatchlist, setWatchlistStatus } from '../services/movieActions';
@@ -12,12 +12,31 @@ type Props = { movie: Movie; userName: string | null; userId: string | null; onC
 const apiBase = import.meta.env.PROD ? '' : import.meta.env.VITE_API_URL ?? 'http://localhost:4000';
 const posterBase = 'https://image.tmdb.org/t/p/w500';
 const backdropBase = 'https://image.tmdb.org/t/p/w1280';
+const MOVIE_REVIEW_PAGE_SIZE = 20;
 
 export default function MovieDetailDialog({ movie, userName, userId, onClose, onSignIn, onToast, onOpenProfile }: Props) {
+  const dialogRef = useRef<HTMLElement>(null);
   useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', handleEscape);
-    return () => window.removeEventListener('keydown', handleEscape);
+    const dialog = dialogRef.current;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const focusableSelector = 'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    const focusableElements = () => dialog ? Array.from(dialog.querySelectorAll<HTMLElement>(focusableSelector)) : [];
+    (focusableElements()[0] ?? dialog)?.focus();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { onClose(); return; }
+      if (event.key !== 'Tab' || !dialog) return;
+      const elements = focusableElements();
+      if (!elements.length) { event.preventDefault(); dialog.focus(); return; }
+      const first = elements[0];
+      const last = elements[elements.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      previousFocus?.focus();
+    };
   }, [onClose]);
   const [myRating, setMyRating] = useState<number | null>(null);
   const [watchStatus, setWatchStatus] = useState<string | null>(null);
@@ -30,18 +49,18 @@ export default function MovieDetailDialog({ movie, userName, userId, onClose, on
     if (!response.ok) throw new Error('Movie details could not be loaded.');
     return response.json() as Promise<MovieDetails>;
   } });
-  const reviews = useQuery({ queryKey: ['movie-reviews', movie.id], enabled: Boolean(supabase), queryFn: async () => {
+  const reviews = useInfiniteQuery({ queryKey: ['movie-reviews', movie.id], enabled: Boolean(supabase), initialPageParam: 0, queryFn: async ({ pageParam }) => {
     const { data: movieRow, error: movieError } = await supabase!.from('movies').select('id').eq('tmdb_id', movie.id).maybeSingle();
     if (movieError) throw new Error('Movie reviews could not be loaded.');
     if (!movieRow) return [] as ReviewEntry[];
-    const { data, error } = await supabase!.from('reviews').select('id,author_id,title,body,rating,created_at').eq('movie_id', movieRow.id).order('created_at', { ascending: false }).limit(30);
+    const { data, error } = await supabase!.from('reviews').select('id,author_id,title,body,rating,created_at').eq('movie_id', movieRow.id).order('created_at', { ascending: false }).range(pageParam, pageParam + MOVIE_REVIEW_PAGE_SIZE - 1);
     if (error) throw new Error('Movie reviews could not be loaded.');
     const rows = data ?? [];
     if (!rows.length) return [] as ReviewEntry[];
     const authorIds = [...new Set(rows.map((row) => row.author_id))];
     const [{ data: authors, error: authorError }, { data: comments, error: commentError }] = await Promise.all([
       supabase!.from('profiles').select('id,username,display_name,avatar_url').in('id', authorIds),
-      supabase!.from('review_comments').select('id,review_id,author_id,body,created_at').in('review_id', rows.map((row) => row.id)).order('created_at', { ascending: true }),
+      supabase!.from('review_comments').select('id,review_id,author_id,body,created_at').in('review_id', rows.map((row) => row.id)).order('created_at', { ascending: true }).limit(300),
     ]);
     if (authorError || commentError) throw new Error('Movie review discussion could not be loaded.');
     const commentRows = comments ?? [];
@@ -50,8 +69,15 @@ export default function MovieDetailDialog({ movie, userName, userId, onClose, on
     if (commentProfilesError) throw new Error('Review replies could not be loaded.');
     const people = new Map((authors ?? []).map((person) => [person.id, person]));
     const replyPeople = new Map((commentProfiles ?? []).map((person) => [person.id, person]));
-    return rows.map((row) => ({ ...row, author: people.get(row.author_id) ?? null, comments: commentRows.filter((comment) => comment.review_id === row.id).map((comment) => ({ ...comment, profile: replyPeople.get(comment.author_id) ?? null })) })) as ReviewEntry[];
-  } });
+    const repliesByReview = new Map<string, typeof commentRows>();
+    for (const comment of commentRows) {
+      const replies = repliesByReview.get(comment.review_id) ?? [];
+      replies.push(comment);
+      repliesByReview.set(comment.review_id, replies);
+    }
+    return rows.map((row) => ({ ...row, author: people.get(row.author_id) ?? null, comments: (repliesByReview.get(row.id) ?? []).map((comment) => ({ ...comment, profile: replyPeople.get(comment.author_id) ?? null })) })) as ReviewEntry[];
+  }, getNextPageParam: (lastPage, pages) => lastPage.length === MOVIE_REVIEW_PAGE_SIZE ? pages.length * MOVIE_REVIEW_PAGE_SIZE : undefined });
+  const reviewEntries = reviews.data?.pages.flatMap((page) => page) ?? [];
   const reviewClient = useQueryClient();
   const personalState = useQuery({ queryKey: ['movie', movie.id, 'me'], queryFn: () => getUserMovieState(movie.id), enabled: Boolean(userName), retry: false });
   useEffect(() => {
@@ -141,7 +167,7 @@ export default function MovieDetailDialog({ movie, userName, userId, onClose, on
   }
 
   return <div className="movie-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-    <article className="movie-dialog" role="dialog" aria-modal="true" aria-labelledby="movie-dialog-title">
+    <article ref={dialogRef} className="movie-dialog" role="dialog" aria-modal="true" aria-labelledby="movie-dialog-title" tabIndex={-1}>
       <button className="movie-dialog-close" onClick={onClose} aria-label="Close movie details"><X size={19}/></button>
       <div className="movie-dialog-backdrop-image" style={{ backgroundImage: data?.backdrop_path ? `linear-gradient(90deg,#151612 3%,rgba(21,22,18,.82) 49%,rgba(21,22,18,.3)),linear-gradient(0deg,#151612,transparent 54%),url(${backdropBase}${data.backdrop_path})` : undefined }}/>
       <div className="movie-dialog-main">
@@ -163,7 +189,7 @@ export default function MovieDetailDialog({ movie, userName, userId, onClose, on
         </div>
       </div>
       <div className="movie-dialog-cast">{data?.credits?.cast?.slice(0,5).map((person) => <div key={person.id} className="cast-person">{person.profile_path ? <img src={`https://image.tmdb.org/t/p/w185${person.profile_path}`} alt="" loading="lazy" decoding="async"/> : <span className="cast-placeholder">{person.name.slice(0,1)}</span>}<span><b>{person.name}</b><small>{person.character}</small></span></div>)}</div>
-      <section className="movie-detail-reviews"><div className="movie-section-heading"><div><span>COMMUNITY</span><h3>Reviews</h3></div><small>{reviews.data?.length ?? 0} reviews</small></div>{reviews.isPending && <p aria-live="polite">Loading reviews…</p>}{reviews.isError && <p className="movie-action-error" role="alert">{reviews.error.message}</p>}{reviews.data?.map((review) => <article className="movie-review" key={review.id}><header><button type="button" onClick={() => onOpenProfile(review.author_id)}><span className="review-avatar">{review.author?.avatar_url ? <img src={review.author.avatar_url} alt=""/> : (review.author?.display_name ?? 'F').slice(0, 1).toUpperCase()}</span><span><b>{review.author?.display_name ?? 'Film lover'}</b><small>@{review.author?.username ?? 'filmlover'}</small></span></button><span className="review-rating">★ {Number(review.rating).toFixed(1)}</span><time dateTime={review.created_at}>{new Date(review.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</time></header>{review.title && <h4>{review.title}</h4>}<p>{review.body}</p>{review.comments.map((comment) => <div className="movie-review-reply" key={comment.id}><button onClick={() => onOpenProfile(comment.author_id)}>{comment.profile?.display_name ?? comment.profile?.username ?? 'Film lover'}</button><span>{comment.body}</span><time dateTime={comment.created_at}>{new Date(comment.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</time></div>)}<form className="movie-review-reply-form" onSubmit={(event) => void replyToReview(review.id, event)}><input name="reply" maxLength={2000} placeholder="Reply to this review…" aria-label="Reply to review"/><button type="submit" aria-label="Send reply"><MessageCircle size={15}/></button></form></article>)}{!reviews.isPending && !reviews.isError && !reviews.data?.length && <p className="movie-reviews-empty">No community reviews yet. Start one from the Reviews section.</p>}</section>
+      <section className="movie-detail-reviews"><div className="movie-section-heading"><div><span>COMMUNITY</span><h3>Reviews</h3></div><small>{reviewEntries.length} reviews</small></div>{reviews.isPending && <p aria-live="polite">Loading reviews…</p>}{reviews.isError && <p className="movie-action-error" role="alert">{reviews.error.message}</p>}{reviewEntries.map((review) => <article className="movie-review" key={review.id}><header><button type="button" onClick={() => onOpenProfile(review.author_id)}><span className="review-avatar">{review.author?.avatar_url ? <img src={review.author.avatar_url} alt=""/> : (review.author?.display_name ?? 'F').slice(0, 1).toUpperCase()}</span><span><b>{review.author?.display_name ?? 'Film lover'}</b><small>@{review.author?.username ?? 'filmlover'}</small></span></button><span className="review-rating">★ {Number(review.rating).toFixed(1)}</span><time dateTime={review.created_at}>{new Date(review.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</time></header>{review.title && <h4>{review.title}</h4>}<p>{review.body}</p>{review.comments.map((comment) => <div className="movie-review-reply" key={comment.id}><button onClick={() => onOpenProfile(comment.author_id)}>{comment.profile?.display_name ?? comment.profile?.username ?? 'Film lover'}</button><span>{comment.body}</span><time dateTime={comment.created_at}>{new Date(comment.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</time></div>)}<form className="movie-review-reply-form" onSubmit={(event) => void replyToReview(review.id, event)}><input name="reply" maxLength={2000} placeholder="Reply to this review…" aria-label="Reply to review"/><button type="submit" aria-label="Send reply"><MessageCircle size={15}/></button></form></article>)}{!reviews.isPending && !reviews.isError && !reviewEntries.length && <p className="movie-reviews-empty">No community reviews yet. Start one from the Reviews section.</p>}{(reviews.hasNextPage || reviews.isFetchNextPageError) && <div className="movie-reviews-pagination" aria-label="Movie review pages"><button type="button" disabled={reviews.isFetchingNextPage} onClick={() => void reviews.fetchNextPage()}>{reviews.isFetchingNextPage ? 'Loading reviews…' : 'Load more reviews'}</button></div>}{reviews.isFetchNextPageError && <p className="movie-action-error" role="alert">More reviews could not load. Try again.</p>}</section>
       <MovieDiscussion tmdbId={movie.id} userId={userId} onSignIn={onSignIn}/>
       <div className="movie-dialog-credit">Movie data and images provided by TMDB. Afterscene is not endorsed or certified by TMDB.</div>
     </article>
