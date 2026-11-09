@@ -150,7 +150,7 @@ export default function MovieDetailDialog({ movie, userName, userId, onClose, on
   }
 
   return <div className="movie-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-    <article className="movie-dialog" role="dialog" aria-modal="true" aria-labelledby="movie-dialog-title">
+    <article ref={dialogRef} className="movie-dialog" role="dialog" aria-modal="true" aria-labelledby="movie-dialog-title" tabIndex={-1}>
       <button className="movie-dialog-close" onClick={onClose} aria-label="Close movie details"><X size={19}/></button>
       <div className="movie-dialog-backdrop-image" style={{ backgroundImage: data?.backdrop_path ? `linear-gradient(90deg,#151612 3%,rgba(21,22,18,.82) 49%,rgba(21,22,18,.3)),linear-gradient(0deg,#151612,transparent 54%),url(${backdropBase}${data.backdrop_path})` : undefined }}/>
       <div className="movie-dialog-main">
