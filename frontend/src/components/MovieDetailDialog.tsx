@@ -35,7 +35,7 @@ export default function MovieDetailDialog({ movie, userName, userId, onClose, on
     const { data: movieRow, error: movieError } = await supabase!.from('movies').select('id').eq('tmdb_id', movie.id).maybeSingle();
     if (movieError) throw new Error('Movie reviews could not be loaded.');
     if (!movieRow) return [] as ReviewEntry[];
-    const { data, error } = await supabase!.from('reviews').select('id,author_id,title,body,rating,created_at').eq('movie_id', movieRow.id).order('created_at', { ascending: false }).limit(30);
+    const { data, error } = await supabase!.from('reviews').select('id,author_id,title,body,rating,created_at').eq('movie_id', movieRow.id).order('created_at', { ascending: false }).range(pageParam, pageParam + MOVIE_REVIEW_PAGE_SIZE - 1);
     if (error) throw new Error('Movie reviews could not be loaded.');
     const rows = data ?? [];
     if (!rows.length) return [] as ReviewEntry[];
