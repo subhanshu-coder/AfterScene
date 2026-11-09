@@ -42,7 +42,7 @@ export default function MovieDetailDialog({ movie, userName, userId, onClose, on
     const authorIds = [...new Set(rows.map((row) => row.author_id))];
     const [{ data: authors, error: authorError }, { data: comments, error: commentError }] = await Promise.all([
       supabase!.from('profiles').select('id,username,display_name,avatar_url').in('id', authorIds),
-      supabase!.from('review_comments').select('id,review_id,author_id,body,created_at').in('review_id', rows.map((row) => row.id)).order('created_at', { ascending: true }),
+      supabase!.from('review_comments').select('id,review_id,author_id,body,created_at').in('review_id', rows.map((row) => row.id)).order('created_at', { ascending: true }).limit(300),
     ]);
     if (authorError || commentError) throw new Error('Movie review discussion could not be loaded.');
     const commentRows = comments ?? [];
