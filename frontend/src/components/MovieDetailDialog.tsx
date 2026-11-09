@@ -59,6 +59,7 @@ export default function MovieDetailDialog({ movie, userName, userId, onClose, on
     }
     return rows.map((row) => ({ ...row, author: people.get(row.author_id) ?? null, comments: (repliesByReview.get(row.id) ?? []).map((comment) => ({ ...comment, profile: replyPeople.get(comment.author_id) ?? null })) })) as ReviewEntry[];
   }, getNextPageParam: (lastPage, pages) => lastPage.length === MOVIE_REVIEW_PAGE_SIZE ? pages.length * MOVIE_REVIEW_PAGE_SIZE : undefined });
+  const reviewEntries = reviews.data?.pages.flatMap((page) => page) ?? [];
   const reviewClient = useQueryClient();
   const personalState = useQuery({ queryKey: ['movie', movie.id, 'me'], queryFn: () => getUserMovieState(movie.id), enabled: Boolean(userName), retry: false });
   useEffect(() => {
