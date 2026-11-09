@@ -12,6 +12,7 @@ type Props = { movie: Movie; userName: string | null; userId: string | null; onC
 const apiBase = import.meta.env.PROD ? '' : import.meta.env.VITE_API_URL ?? 'http://localhost:4000';
 const posterBase = 'https://image.tmdb.org/t/p/w500';
 const backdropBase = 'https://image.tmdb.org/t/p/w1280';
+const MOVIE_REVIEW_PAGE_SIZE = 20;
 
 export default function MovieDetailDialog({ movie, userName, userId, onClose, onSignIn, onToast, onOpenProfile }: Props) {
   useEffect(() => {
