@@ -31,7 +31,7 @@ export default function MovieDetailDialog({ movie, userName, userId, onClose, on
     if (!response.ok) throw new Error('Movie details could not be loaded.');
     return response.json() as Promise<MovieDetails>;
   } });
-  const reviews = useQuery({ queryKey: ['movie-reviews', movie.id], enabled: Boolean(supabase), queryFn: async () => {
+  const reviews = useInfiniteQuery({ queryKey: ['movie-reviews', movie.id], enabled: Boolean(supabase), initialPageParam: 0, queryFn: async ({ pageParam }) => {
     const { data: movieRow, error: movieError } = await supabase!.from('movies').select('id').eq('tmdb_id', movie.id).maybeSingle();
     if (movieError) throw new Error('Movie reviews could not be loaded.');
     if (!movieRow) return [] as ReviewEntry[];
