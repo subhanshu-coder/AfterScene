@@ -15,6 +15,7 @@ const backdropBase = 'https://image.tmdb.org/t/p/w1280';
 const MOVIE_REVIEW_PAGE_SIZE = 20;
 
 export default function MovieDetailDialog({ movie, userName, userId, onClose, onSignIn, onToast, onOpenProfile }: Props) {
+  const dialogRef = useRef<HTMLElement>(null);
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose(); };
     window.addEventListener('keydown', handleEscape);
