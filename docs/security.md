@@ -8,3 +8,8 @@
 - User text fields are bounded in both SQL constraints and API validation where implemented.
 
 Before launch, complete security review for all new endpoints and RLS policies, configure production CORS origins, set provider key rotation, validate image uploads, and add abuse controls for social writes and AI requests. Do not grant the service role to clients or CI pull-request builds.
+
+
+## Review replies
+
+The `review_comments` table permits public reads and authenticated inserts. Its delete policy is limited to rows where `author_id = (select auth.uid())`, so a client-side ownership check is only a presentation guard; PostgreSQL RLS remains the access-control boundary. The movie detail page applies the same author filter to its delete request, disables concurrent delete actions, and refreshes the displayed review thread after success.
