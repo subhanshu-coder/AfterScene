@@ -111,7 +111,8 @@ export default function MovieDetailDialog({ movie, userName, userId, onClose, on
     if (error) { setReplyingToReview(null); return setActionError('Could not send your review reply. Please try again.'); }
     setReplyingToReview(null);
     form.reset();
-    void reviewClient.invalidateQueries({ queryKey: ['movie-reviews', movie.id] });
+    await reviewClient.invalidateQueries({ queryKey: ['movie-reviews', movie.id] });
+    onToast('Your reply was posted.');
   }
 
   async function deleteReviewReply(replyId: string) {
