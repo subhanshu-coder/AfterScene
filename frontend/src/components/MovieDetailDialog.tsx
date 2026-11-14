@@ -110,6 +110,21 @@ export default function MovieDetailDialog({ movie, userName, userId, onClose, on
     void reviewClient.invalidateQueries({ queryKey: ['movie-reviews', movie.id] });
   }
 
+  async function deleteReviewReply(replyId: string) {
+    if (!userId || !supabase) return onSignIn();
+    setDeletingReply(replyId);
+    try {
+      const { error } = await supabase.from('review_comments').delete().eq('id', replyId).eq('author_id', userId);
+      if (error) throw error;
+      await reviewClient.invalidateQueries({ queryKey: ['movie-reviews', movie.id] });
+      onToast('Your review reply was deleted.');
+    } catch {
+      setActionError('Could not delete your review reply. Please try again.');
+    } finally {
+      setDeletingReply(null);
+    }
+  }
+
   async function rate(rating: number) {
     if (!userName) return onSignIn();
     setSaving('rating'); setActionError('');
