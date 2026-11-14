@@ -81,6 +81,13 @@ export default function MovieDetailDialog({ movie, userName, userId, onClose, on
   }, getNextPageParam: (lastPage, pages) => lastPage.length === MOVIE_REVIEW_PAGE_SIZE ? pages.length * MOVIE_REVIEW_PAGE_SIZE : undefined });
   const reviewEntries = reviews.data?.pages.flatMap((page) => page) ?? [];
   const reviewClient = useQueryClient();
+  useEffect(() => {
+    if (!supabase) return;
+    const channel = supabase.channel(`movie-review-comments-${movie.id}`).on('postgres_changes', { event: '*', schema: 'public', table: 'review_comments' }, () => {
+      void reviewClient.invalidateQueries({ queryKey: ['movie-reviews', movie.id] });
+    }).subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [movie.id, reviewClient]);
   const personalState = useQuery({ queryKey: ['movie', movie.id, 'me'], queryFn: () => getUserMovieState(movie.id), enabled: Boolean(userName), retry: false });
   useEffect(() => {
     const controller = new AbortController();
