@@ -16,3 +16,8 @@ Community queries cap post, comment, review-reply, and collection-item reads. Pr
 
 
 Feed pagination is explicit and page bounded. Loading another page fetches only that page and the related interaction rows, rather than requesting the full community history. Feed ordering uses follow state, visible interaction counts, and recency; it does not require sending private account data to an external ranking service. Realtime invalidation can refresh loaded pages when new community activity arrives.
+
+
+## Review reply controls
+
+Movie review threads expose a delete control only on replies authored by the signed-in member. Deletion asks for confirmation, prevents overlapping requests, and refreshes the thread from Supabase after completion. Row-level security checks authorship independently of the interface.

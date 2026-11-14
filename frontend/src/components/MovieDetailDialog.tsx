@@ -42,6 +42,8 @@ export default function MovieDetailDialog({ movie, userName, userId, onClose, on
   const [watchStatus, setWatchStatus] = useState<string | null>(null);
   const [saving, setSaving] = useState<'rating' | 'watchlist' | null>(null);
   const [actionError, setActionError] = useState('');
+  const [deletingReply, setDeletingReply] = useState<string | null>(null);
+  const [replyingToReview, setReplyingToReview] = useState<string | null>(null);
   const [verdict, setVerdict] = useState<string | null>(null);
   const [community, setCommunity] = useState<{ count: number; score: number | null; distribution: Record<string, number> } | null>(null);
   const details = useQuery({ queryKey: ['movie', movie.id], queryFn: async ({ signal }) => {
@@ -79,6 +81,14 @@ export default function MovieDetailDialog({ movie, userName, userId, onClose, on
   }, getNextPageParam: (lastPage, pages) => lastPage.length === MOVIE_REVIEW_PAGE_SIZE ? pages.length * MOVIE_REVIEW_PAGE_SIZE : undefined });
   const reviewEntries = reviews.data?.pages.flatMap((page) => page) ?? [];
   const reviewClient = useQueryClient();
+  useEffect(() => {
+    const supabaseClient = supabase;
+    if (!supabaseClient) return;
+    const channel = supabaseClient.channel(`movie-review-comments-${movie.id}`).on('postgres_changes', { event: '*', schema: 'public', table: 'review_comments' }, () => {
+      void reviewClient.invalidateQueries({ queryKey: ['movie-reviews', movie.id] });
+    }).subscribe();
+    return () => { void supabaseClient.removeChannel(channel); };
+  }, [movie.id, reviewClient]);
   const personalState = useQuery({ queryKey: ['movie', movie.id, 'me'], queryFn: () => getUserMovieState(movie.id), enabled: Boolean(userName), retry: false });
   useEffect(() => {
     const controller = new AbortController();
@@ -99,13 +109,40 @@ export default function MovieDetailDialog({ movie, userName, userId, onClose, on
   async function replyToReview(reviewId: string, event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!userId || !supabase) return onSignIn();
+    if (replyingToReview === reviewId) return;
     const form = event.currentTarget;
     const body = new FormData(form).get('reply')?.toString().trim();
     if (!body) return;
-    const { error } = await supabase.from('review_comments').insert({ review_id: reviewId, author_id: userId, body });
-    if (error) return setActionError('Could not send your review reply. Please try again.');
-    form.reset();
-    void reviewClient.invalidateQueries({ queryKey: ['movie-reviews', movie.id] });
+    setReplyingToReview(reviewId);
+    setActionError('');
+    try {
+      const { error } = await supabase.from('review_comments').insert({ review_id: reviewId, author_id: userId, body });
+      if (error) throw error;
+      form.reset();
+      setActionError('');
+      await reviewClient.invalidateQueries({ queryKey: ['movie-reviews', movie.id] });
+      onToast('Your reply was posted.');
+    } catch {
+      setActionError('Could not send your review reply. Please try again.');
+    } finally {
+      setReplyingToReview(null);
+    }
+  }
+
+  async function deleteReviewReply(replyId: string) {
+    if (!userId || !supabase) return onSignIn();
+    if (!window.confirm('Delete your reply to this review?')) return;
+    setDeletingReply(replyId);
+    try {
+      const { error } = await supabase.from('review_comments').delete().eq('id', replyId).eq('author_id', userId);
+      if (error) throw error;
+      await reviewClient.invalidateQueries({ queryKey: ['movie-reviews', movie.id] });
+      onToast('Your review reply was deleted.');
+    } catch {
+      setActionError('Could not delete your review reply. Please try again.');
+    } finally {
+      setDeletingReply(null);
+    }
   }
 
   async function rate(rating: number) {
@@ -189,7 +226,7 @@ export default function MovieDetailDialog({ movie, userName, userId, onClose, on
         </div>
       </div>
       <div className="movie-dialog-cast">{data?.credits?.cast?.slice(0,5).map((person) => <div key={person.id} className="cast-person">{person.profile_path ? <img src={`https://image.tmdb.org/t/p/w185${person.profile_path}`} alt="" loading="lazy" decoding="async"/> : <span className="cast-placeholder">{person.name.slice(0,1)}</span>}<span><b>{person.name}</b><small>{person.character}</small></span></div>)}</div>
-      <section className="movie-detail-reviews"><div className="movie-section-heading"><div><span>COMMUNITY</span><h3>Reviews</h3></div><small>{reviewEntries.length} reviews</small></div>{reviews.isPending && <p aria-live="polite">Loading reviews…</p>}{reviews.isError && <p className="movie-action-error" role="alert">{reviews.error.message}</p>}{reviewEntries.map((review) => <article className="movie-review" key={review.id}><header><button type="button" onClick={() => onOpenProfile(review.author_id)}><span className="review-avatar">{review.author?.avatar_url ? <img src={review.author.avatar_url} alt=""/> : (review.author?.display_name ?? 'F').slice(0, 1).toUpperCase()}</span><span><b>{review.author?.display_name ?? 'Film lover'}</b><small>@{review.author?.username ?? 'filmlover'}</small></span></button><span className="review-rating">★ {Number(review.rating).toFixed(1)}</span><time dateTime={review.created_at}>{new Date(review.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</time></header>{review.title && <h4>{review.title}</h4>}<p>{review.body}</p>{review.comments.map((comment) => <div className="movie-review-reply" key={comment.id}><button onClick={() => onOpenProfile(comment.author_id)}>{comment.profile?.display_name ?? comment.profile?.username ?? 'Film lover'}</button><span>{comment.body}</span><time dateTime={comment.created_at}>{new Date(comment.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</time></div>)}<form className="movie-review-reply-form" onSubmit={(event) => void replyToReview(review.id, event)}><input name="reply" maxLength={2000} placeholder="Reply to this review…" aria-label="Reply to review"/><button type="submit" aria-label="Send reply"><MessageCircle size={15}/></button></form></article>)}{!reviews.isPending && !reviews.isError && !reviewEntries.length && <p className="movie-reviews-empty">No community reviews yet. Start one from the Reviews section.</p>}{(reviews.hasNextPage || reviews.isFetchNextPageError) && <div className="movie-reviews-pagination" aria-label="Movie review pages"><button type="button" disabled={reviews.isFetchingNextPage} onClick={() => void reviews.fetchNextPage()}>{reviews.isFetchingNextPage ? 'Loading reviews…' : 'Load more reviews'}</button></div>}{reviews.isFetchNextPageError && <p className="movie-action-error" role="alert">More reviews could not load. Try again.</p>}</section>
+      <section className="movie-detail-reviews"><div className="movie-section-heading"><div><span>COMMUNITY</span><h3>Reviews</h3></div><small>{reviewEntries.length} reviews</small></div>{reviews.isPending && <p aria-live="polite">Loading reviews…</p>}{reviews.isError && <p className="movie-action-error" role="alert">{reviews.error.message}</p>}{reviewEntries.map((review) => <article className="movie-review" key={review.id}><header><button type="button" onClick={() => onOpenProfile(review.author_id)}><span className="review-avatar">{review.author?.avatar_url ? <img src={review.author.avatar_url} alt=""/> : (review.author?.display_name ?? 'F').slice(0, 1).toUpperCase()}</span><span><b>{review.author?.display_name ?? 'Film lover'}</b><small>@{review.author?.username ?? 'filmlover'}</small></span></button><span className="review-rating">★ {Number(review.rating).toFixed(1)}</span><time dateTime={review.created_at}>{new Date(review.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</time></header>{review.title && <h4>{review.title}</h4>}<p>{review.body}</p>{review.comments.map((comment) => <div className="movie-review-reply" key={comment.id} aria-busy={deletingReply === comment.id}><button onClick={() => onOpenProfile(comment.author_id)}>{comment.profile?.display_name ?? comment.profile?.username ?? 'Film lover'}</button><span>{comment.body}</span><time dateTime={comment.created_at}>{new Date(comment.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</time>{comment.author_id === userId && <button className="movie-review-reply-delete" type="button" disabled={deletingReply !== null} aria-label={deletingReply === comment.id ? 'Deleting your review reply' : 'Delete your review reply'} onClick={() => void deleteReviewReply(comment.id)}>{deletingReply === comment.id ? <LoaderCircle size={14}/> : <X size={14}/>}</button>}</div>)}<form className="movie-review-reply-form" aria-busy={replyingToReview === review.id} onSubmit={(event) => void replyToReview(review.id, event)}><input name="reply" maxLength={2000} placeholder="Reply to this review…" aria-label="Reply to review" disabled={replyingToReview === review.id}/><button type="submit" aria-label="Send reply" disabled={replyingToReview === review.id}>{replyingToReview === review.id ? <LoaderCircle size={15}/> : <MessageCircle size={15}/>}</button></form></article>)}{!reviews.isPending && !reviews.isError && !reviewEntries.length && <p className="movie-reviews-empty">No community reviews yet. Start one from the Reviews section.</p>}{(reviews.hasNextPage || reviews.isFetchNextPageError) && <div className="movie-reviews-pagination" aria-label="Movie review pages"><button type="button" disabled={reviews.isFetchingNextPage} onClick={() => void reviews.fetchNextPage()}>{reviews.isFetchingNextPage ? 'Loading reviews…' : 'Load more reviews'}</button></div>}{reviews.isFetchNextPageError && <p className="movie-action-error" role="alert">More reviews could not load. Try again.</p>}</section>
       <MovieDiscussion tmdbId={movie.id} userId={userId} onSignIn={onSignIn}/>
       <div className="movie-dialog-credit">Movie data and images provided by TMDB. Afterscene is not endorsed or certified by TMDB.</div>
     </article>
