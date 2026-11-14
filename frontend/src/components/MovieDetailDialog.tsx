@@ -130,6 +130,7 @@ export default function MovieDetailDialog({ movie, userName, userId, onClose, on
 
   async function deleteReviewReply(replyId: string) {
     if (!userId || !supabase) return onSignIn();
+    if (!window.confirm('Delete your reply to this review?')) return;
     setDeletingReply(replyId);
     try {
       const { error } = await supabase.from('review_comments').delete().eq('id', replyId).eq('author_id', userId);
