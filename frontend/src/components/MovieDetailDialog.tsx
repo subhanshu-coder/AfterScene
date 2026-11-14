@@ -108,7 +108,8 @@ export default function MovieDetailDialog({ movie, userName, userId, onClose, on
     setReplyingToReview(reviewId);
     setActionError('');
     const { error } = await supabase.from('review_comments').insert({ review_id: reviewId, author_id: userId, body });
-    if (error) return setActionError('Could not send your review reply. Please try again.');
+    if (error) { setReplyingToReview(null); return setActionError('Could not send your review reply. Please try again.'); }
+    setReplyingToReview(null);
     form.reset();
     void reviewClient.invalidateQueries({ queryKey: ['movie-reviews', movie.id] });
   }
