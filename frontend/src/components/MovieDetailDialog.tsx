@@ -43,6 +43,7 @@ export default function MovieDetailDialog({ movie, userName, userId, onClose, on
   const [saving, setSaving] = useState<'rating' | 'watchlist' | null>(null);
   const [actionError, setActionError] = useState('');
   const [deletingReply, setDeletingReply] = useState<string | null>(null);
+  const [replyingToReview, setReplyingToReview] = useState<string | null>(null);
   const [verdict, setVerdict] = useState<string | null>(null);
   const [community, setCommunity] = useState<{ count: number; score: number | null; distribution: Record<string, number> } | null>(null);
   const details = useQuery({ queryKey: ['movie', movie.id], queryFn: async ({ signal }) => {
