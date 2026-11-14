@@ -101,6 +101,7 @@ export default function MovieDetailDialog({ movie, userName, userId, onClose, on
   async function replyToReview(reviewId: string, event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!userId || !supabase) return onSignIn();
+    if (replyingToReview === reviewId) return;
     const form = event.currentTarget;
     const body = new FormData(form).get('reply')?.toString().trim();
     if (!body) return;
