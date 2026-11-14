@@ -32,3 +32,8 @@ Community reads remain bounded: the feed fetches a fixed page of posts and a cap
 ## Community feed pagination and ranking
 
 The community Feed, Discussions, and Trending lanes load posts in 20-row offset pages through TanStack Query infinite queries. A short page ends pagination; users request older posts with the explicit Load more control. Related comments, reactions, reposts, and profile rows are queried only for the current page. The Feed ranks those loaded posts using follow relationships, interaction counts, and recency; Trending uses its separate engagement-velocity score. Ranking is deterministic for the same underlying data and query time.
+
+
+## Review reply ownership
+
+Signed-in members may create review replies. A member can delete only a reply whose `author_id` matches their authenticated user ID; the browser applies that ownership filter and PostgreSQL row-level security enforces the same rule. Review lists and their replies are refreshed after an action so the displayed thread reflects the database state.
