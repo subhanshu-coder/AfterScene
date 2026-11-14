@@ -105,6 +105,8 @@ export default function MovieDetailDialog({ movie, userName, userId, onClose, on
     const form = event.currentTarget;
     const body = new FormData(form).get('reply')?.toString().trim();
     if (!body) return;
+    setReplyingToReview(reviewId);
+    setActionError('');
     const { error } = await supabase.from('review_comments').insert({ review_id: reviewId, author_id: userId, body });
     if (error) return setActionError('Could not send your review reply. Please try again.');
     form.reset();
