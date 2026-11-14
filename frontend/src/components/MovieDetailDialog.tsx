@@ -119,6 +119,7 @@ export default function MovieDetailDialog({ movie, userName, userId, onClose, on
       const { error } = await supabase.from('review_comments').insert({ review_id: reviewId, author_id: userId, body });
       if (error) throw error;
       form.reset();
+      setActionError('');
       await reviewClient.invalidateQueries({ queryKey: ['movie-reviews', movie.id] });
       onToast('Your reply was posted.');
     } catch {
